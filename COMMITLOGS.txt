@@ -1,0 +1,26 @@
+Initial Commit
+
+- Added the following files:
+  + .gitignore
+  + COMMITLOGS.txt
+  + LICENSE
+  + Wish-Wosh-Water-System-For-WBM.ino
+  + README.md
+- License used is the MIT License.
+- Added contents to `.gitignore`.
+- Added contents to `README.md`.
+
+`Wish-Wosh-Water-System-For-WBM.ino` Notes
+- Included the following libraries and dependencies:
+  + SD by Arduino, SparkFun
+  + Adafruit Unified Sensor by Adafruit...
+  + DHT sensor library by Adafruit
+- Defined the following functions:
+  + setup
+  + loop
+  + sdcm_fail_indicator
+  + write_data
+  + cycle_indicator
+  + poff_ready_indicator
+  + check_sdcm
+  + pd_th_sensor
