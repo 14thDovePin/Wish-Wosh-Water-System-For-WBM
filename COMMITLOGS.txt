@@ -2,6 +2,14 @@ TODO List
 - Add a file backup system for power outage.
 
 
+Added a function to store data on sd card in the current file.
+
+Changers
+- Added the following function/s:
+  + store_data
+
+
+
 Implemented an error indicator for the TH sensor.
 
 Changes

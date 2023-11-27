@@ -8,7 +8,7 @@
 
 // User defined variables.
 const int base = 2;  // Cycles per Second
-const bool developerMode = true;
+const bool developerMode = false;
 
 
 // Indicator LEDs.
@@ -35,6 +35,7 @@ const int cps = base * mult;
 unsigned long previousMillis = 0;
 
 unsigned long startTime;
+String fileName;
 
 
 void setup() {
@@ -83,16 +84,21 @@ void loop() {
     // Save the current time.
     previousMillis = currentMillis;
 
-    // Call functions here.
+    // Cycle indicator.
     if (!developerMode) {
       cycle_indicator();
     } else {
       dm_cycle_indicator();
+      return;
     }
 
+    // Check sd card initialization.
     check_sdcm();
+
+    // Pull temp & humidity data.
     String th = pd_th_sensor();
-    Serial.println(th);
+
+    store_data(th);
   }
 
   // Safe power off button.
@@ -125,7 +131,7 @@ void write_data() {
   while (SD.exists("data_" + String(fileIndex) + ".txt")) {
     fileIndex++;
   }
-  String fileName = "data_" + String(fileIndex) + ".txt";
+  fileName = "data_" + String(fileIndex) + ".txt";
 
   // Create file with the unique filename.
   File dataFile = SD.open(fileName, FILE_WRITE);
@@ -222,3 +228,21 @@ void pd_th_sensor_error() {
   digitalWrite(A_LED_IP, LOW);
   delay(600);
 }
+
+
+void store_data(String research_data) {
+  // Store research data in the sd card.
+
+  // Open file.
+  File dataFile = SD.open(fileName, FILE_WRITE);
+
+  // Write data into the file.
+  if (dataFile) {
+    dataFile.println(research_data);
+
+  // Close file.
+    dataFile.close();
+    Serial.println(research_data);
+  }
+}
+
