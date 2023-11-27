@@ -1,3 +1,18 @@
+TODO List
+- Add a file backup system for power outage.
+
+
+Implemented an error indicator for the TH sensor.
+
+Changes
+- Updated `README.md`.
+- Added the following functions:
+  + dm_cycle_indicator
+  + pd_th_sensor_error
+- Refactored code.
+
+
+
 Initial Commit
 
 - Added the following files:

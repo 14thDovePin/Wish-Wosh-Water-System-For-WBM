@@ -16,16 +16,33 @@ There are 3 indicator lights accordingly as followed:
 [B] [R<sub>A</sub>] [R<sub>B</sub>]
 
 [B] = Cycle per Second Indicator Light
+
 [R<sub>A</sub>] = Red Indicator Light A
+
 [R<sub>B</sub>] = Red Indicator Light B
 
 --- = Off Time
+
 ... = Repeat
 
 **Normal Cycles** - All systems normal.
+
 [B] --- [B] ...
+
 **SD Card Error**
+
 [R<sub>A</sub>] --- [R<sub>B</sub>] --- [R<sub>A</sub>] --- [R<sub>B</sub>] ...
+
+**Temperature & Humidity Sensor Error**
+
+[R<sub>A</sub>] --- [R<sub>A</sub>]...
+
+**Soil Moisture Content Sensor Error**
+
+[R<sub>B</sub>] --- [R<sub>B</sub>]...
+
 **Shutdown Ready** - Safe to power off.
+
 [B] [B] ...
+
 [R<sub>A</sub>] [R<sub>B</sub>] --- [R<sub>A</sub>] [R<sub>B</sub>] ...

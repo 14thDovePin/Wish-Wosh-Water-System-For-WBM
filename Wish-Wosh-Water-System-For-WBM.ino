@@ -84,16 +84,20 @@ void loop() {
     previousMillis = currentMillis;
 
     // Call functions here.
-    cycle_indicator();
+    if (!developerMode) {
+      cycle_indicator();
+    } else {
+      dm_cycle_indicator();
+    }
 
     check_sdcm();
-    pd_th_sensor();
+    String th = pd_th_sensor();
+    Serial.println(th);
   }
 
-  // Check if the button is pressed
+  // Safe power off button.
   if (digitalRead(P_OFF) == LOW) {
     poff_ready_indicator();
-    Serial.println("Button pressed!"); // Print to Serial Monitor
   }
 }
 
@@ -152,6 +156,20 @@ void cycle_indicator() {
 }
 
 
+void dm_cycle_indicator() {
+  // Developer mode cycle indicator.
+  digitalWrite(CPS_LED_IP, HIGH);
+  delay(200);
+  digitalWrite(CPS_LED_IP, LOW);
+
+  delay(100);
+
+  digitalWrite(CPS_LED_IP, HIGH);
+  delay(200);
+  digitalWrite(CPS_LED_IP, LOW);
+}
+
+
 void poff_ready_indicator() {
   // Allows for safely turning off the device.
   digitalWrite(CPS_LED_IP, HIGH);
@@ -175,20 +193,32 @@ void check_sdcm() {
 }
 
 
-void pd_th_sensor() {
+String pd_th_sensor() {
   // Return data from DHT11 temperature & humidity sensor.
   float humidity = dht.readHumidity();
   float temperature = dht.readTemperature();
 
   // Check if readings are valid
   if (isnan(humidity) || isnan(temperature)) {
-    Serial.println("Failed to read from DHT sensor!");
+    Serial.println("TH Sensor Error");
+    pd_th_sensor_error();
     return;
   }
 
-  // Print data to Serial Monitor
-  Serial.print("Relative Humidity: ");
-  Serial.print(humidity);
-  Serial.print("%  Temperature: ");
-  Serial.println(temperature);
+  String th;
+  th = String(temperature);
+  th += ',';
+  th += String(humidity);
+  th += ',';
+
+  return th;
+}
+
+
+void pd_th_sensor_error() {
+  // Indicates temperature & humidity sensor error.
+  digitalWrite(A_LED_IP, HIGH);
+  delay(200);
+  digitalWrite(A_LED_IP, LOW);
+  delay(600);
 }
