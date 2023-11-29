@@ -1,189 +1,207 @@
-// Dependencies for SD Card Module.
+// Dependencies and libraries for the SD Card Module.
 #include <SPI.h>
 #include <SD.h>
 
-// Dependencies for the DHT Temperature & Humidity Sensor.
+// Dependencies and libraries for the Temperature & Humidity Sensor.
 #include <DHT.h>
 
 
-// User defined variables.
+// Program attributes & flags.
 const int base = 2;  // Cycles per Second
+const bool saveData = true;
 const bool developerMode = false;
 
 
-// Indicator LEDs.
+// Pinouts.
 const int CPS_LED_IP = A3;  // CPS Indicator
 const int A_LED_IP = A4;    // Red Indicator A
 const int B_LED_IP = A5;    // Red Indicator B
-
-// Power off button.
-const int P_OFF = A2;
+const int P_OFF = A2;       // Power Off Button
 
 // SD Card Module setup.
-const int chipSelect = 10;  // D10
+const int chipSelect = 10;  // Digital Pin
 
-// DHT Temperature & Humidity Sensor setup.
-#define DHTPIN 9       // D9
-#define DHTTYPE DHT11  // DHT Sensor Type
+// Temperature & Humidity Sensor setup.
+#define DHTPIN 9            // Digital Pin
+#define DHTTYPE DHT11       // DHT Sensor Type
+DHT dht(DHTPIN, DHTTYPE);   // Initialize class.
 
-DHT dht(DHTPIN, DHTTYPE);
+// Capacitive Soil Moisture Sensor setup.
+const int DRY_VAL = 459;    // Callibration Value
+const int WET_VAL = 913;    // Callibration Value
+const int CSM1 = A7;        // Analog Pin
 
 
-// Pre-defined variables.
+// Variables for CPS calculation.
 const int mult = 1000;
 const int cps = base * mult;
 unsigned long previousMillis = 0;
 
 unsigned long startTime;
-String fileName;
+String fileName;            // Current File
 
 
 void setup() {
   // Setup serial monitor.
   Serial.begin(9600);
 
-  if (developerMode) {
-    Serial.println("Developer Mode: Active");
+  if (saveData) {
+    Serial.println("Save Data: Enabled");
   } else {
-    Serial.println("Developer Mode: Inactive");
+    Serial.println("Save Data: Disabled");
   }
 
-  // Setup indicator pins.
+  // Set digital pins.
   pinMode(CPS_LED_IP, OUTPUT);
   pinMode(A_LED_IP, OUTPUT);
   pinMode(B_LED_IP, OUTPUT);
-
-  // Setup power off pin.
   pinMode(P_OFF, INPUT_PULLUP);
 
-  // Initialize SD card module.
-  if (!SD.begin(chipSelect)) {
-    Serial.println("Card failed.");
-    sdcm_fail_indicator();
-  }
-  else {
-    Serial.println("Card initialized.");
-  }
-
-  // Write the necessary file.
-  if (!developerMode) {
-    write_data();
-  }
-
-  // Initialize temperature and humidity sensor.
-  dht.begin();
+  // Initialize modules and devices.
+  sdcmInitialize();  // SD Card Module
+  dht.begin();       // Temperature & Humidity Sensor
 }
 
 
 void loop() {
-  // Get the current time
+  // Calculate and check Cycles per Second.
   unsigned long currentMillis = millis();
-
-  // Check if time exceeded CPS.
   if (currentMillis - previousMillis >= cps) {
-    // Save the current time.
     previousMillis = currentMillis;
-
-    // Cycle indicator.
-    if (!developerMode) {
-      cycle_indicator();
-    } else {
-      dm_cycle_indicator();
-      return;
-    }
-
-    // Check sd card initialization.
-    check_sdcm();
-
-    // Pull temp & humidity data.
-    String th = pd_th_sensor();
-
-    store_data(th);
+    cycle();
   }
 
-  // Safe power off button.
+  // Check power off trigger.
   if (digitalRead(P_OFF) == LOW) {
-    poff_ready_indicator();
+    powerOffLoop();
   }
 }
 
 
-void sdcm_fail_indicator() {
-  // SD Card Module Failed Indicator
+void cycle() {
+  // Tasks that needs to be done every cycle.
+  cycleIndicator();
+
+  // Check sd card initialization.
+  check_sdcm();
+
+  // Pull research data.
+  String th = pd_th_sensor();    // Temperature & Humidity
+  String sm = read_csm_data();   // Soil Moisture
+
+  Serial.println(sm);
+  // store_data(th);
+}
+
+
+void sdcmInitialize() {
+  // Initialize the SD card module.
+  if (SD.begin(chipSelect)) {
+    Serial.println("Card initialized.");
+  } else {
+    Serial.println("Card failed.");
+    sdcmError();
+  }
+
+  // Write the data file.
+  if (saveData) {
+    createCSVfile();
+  }
+}
+
+
+void sdcmError() {
+  // SD card module fail indicator.
   while (true) {
     digitalWrite(A_LED_IP, HIGH);
-    delay(450);
+    delay(400);
     digitalWrite(A_LED_IP, LOW);
-    delay(50);
+    delay(100);
 
     digitalWrite(B_LED_IP, HIGH);
-    delay(450);
+    delay(400);
     digitalWrite(B_LED_IP, LOW);
-    delay(50);
+    delay(100);
   }
 }
 
 
-void write_data() {
+void createCSVfile() {
+  // Write the CSV file with its included headers into the SD card.
   int fileIndex = 0;
+  String fileExtension = ".csv";
 
-  // Find and create a unique filename.
-  while (SD.exists("data_" + String(fileIndex) + ".txt")) {
+  // Construct a unique filename.
+  while (SD.exists("data_" + String(fileIndex) + fileExtension)) {
     fileIndex++;
   }
-  fileName = "data_" + String(fileIndex) + ".txt";
+  fileName = "data_" + String(fileIndex) + fileExtension;
 
-  // Create file with the unique filename.
+  // Create csv file.
   File dataFile = SD.open(fileName, FILE_WRITE);
 
-  // Write data headers into the file.
   if (dataFile) {
-    dataFile.print("Time Elapsed,");
+    // Write csv headers into the file.
+    dataFile.print("Date,");
+    dataFile.print("Time,");
     dataFile.print("Temperature,");
     dataFile.print("Humidity,");
     dataFile.print("Soil Moisture,");
     dataFile.println("Spray Count");
 
-  // Close file and record the start time.
+    // Close file.
     dataFile.close();
-    startTime = millis();
     Serial.println("File Created: `" + fileName + "`.");
   } else {
     Serial.println("Error Creating: `" + fileName + "`.");
+    createFileError();
   }
 }
 
 
-void cycle_indicator() {
+void createFileError() {
+  // File creation fail indicator.
+  while (true) {
+    digitalWrite(A_LED_IP, HIGH);
+    delay(150);
+    digitalWrite(A_LED_IP, LOW);
+    delay(50);
+    digitalWrite(A_LED_IP, HIGH);
+    delay(150);
+    digitalWrite(A_LED_IP, LOW);
+    delay(100);
+
+    digitalWrite(B_LED_IP, HIGH);
+    delay(150);
+    digitalWrite(B_LED_IP, LOW);
+    delay(50);
+    digitalWrite(B_LED_IP, HIGH);
+    delay(150);
+    digitalWrite(B_LED_IP, LOW);
+    delay(100);
+  }
+}
+
+
+void cycleIndicator() {
   // Toggles the CPS LED Indicator.
   digitalWrite(CPS_LED_IP, HIGH);
-  delay(200);
+  delay(60);
+  digitalWrite(CPS_LED_IP, LOW);
+  delay(80);
+  digitalWrite(CPS_LED_IP, HIGH);
+  delay(60);
   digitalWrite(CPS_LED_IP, LOW);
 }
 
 
-void dm_cycle_indicator() {
-  // Developer mode cycle indicator.
-  digitalWrite(CPS_LED_IP, HIGH);
-  delay(200);
-  digitalWrite(CPS_LED_IP, LOW);
-
-  delay(100);
-
-  digitalWrite(CPS_LED_IP, HIGH);
-  delay(200);
-  digitalWrite(CPS_LED_IP, LOW);
-}
-
-
-void poff_ready_indicator() {
-  // Allows for safely turning off the device.
+void powerOffLoop() {
+  // Run an infinite loop for safe powering off.
   digitalWrite(CPS_LED_IP, HIGH);
   while (true) {
     digitalWrite(A_LED_IP, HIGH);
     digitalWrite(B_LED_IP, HIGH);
     delay(300);
-
     digitalWrite(A_LED_IP, LOW);
     digitalWrite(B_LED_IP, LOW);
     delay(700);
@@ -191,10 +209,12 @@ void poff_ready_indicator() {
 }
 
 
+
+
 void check_sdcm() {
   // Check SD card module.
   if (!SD.begin(chipSelect)) {
-    sdcm_fail_indicator();
+    sdcmError();
   }
 }
 
@@ -202,19 +222,20 @@ void check_sdcm() {
 String pd_th_sensor() {
   // Return data from DHT11 temperature & humidity sensor.
   float humidity = dht.readHumidity();
-  float temperature = dht.readTemperature();
+  // Callibrated according to weather & another
+  // temperature measuring instrument.
+  float temperature = dht.readTemperature() - 2;
 
-  // Check if readings are valid
+  // Check if readings are valid.
   if (isnan(humidity) || isnan(temperature)) {
-    Serial.println("TH Sensor Error");
     pd_th_sensor_error();
-    return;
+    return String("None,None,");
   }
 
-  String th;
-  th = String(temperature);
+  // Convert temperature and humidity to strings with 2 decimal places.
+  String th = String(temperature, 2);
   th += ',';
-  th += String(humidity);
+  th += String(humidity, 2);
   th += ',';
 
   return th;
@@ -223,6 +244,7 @@ String pd_th_sensor() {
 
 void pd_th_sensor_error() {
   // Indicates temperature & humidity sensor error.
+  Serial.println("TH Sensor Error");
   digitalWrite(A_LED_IP, HIGH);
   delay(200);
   digitalWrite(A_LED_IP, LOW);
@@ -230,8 +252,35 @@ void pd_th_sensor_error() {
 }
 
 
+String read_csm_data() {
+  // Read the analog value from the soil moisture sensor
+  int csm1_raw = analogRead(CSM1);
+
+  // Map the analog value to a percentage (0-100%)
+  int csm1_value = map(csm1_raw, WET_VAL, DRY_VAL, 0, 100);
+
+  // Print the moisture percentage to the serial monitor
+  String data = "";
+  data += String(csm1_value)+"%,";
+
+  return data;
+}
+
+
+void csm_sensor_error_indicator_(float value, String sensor) {
+  // Check the expected value returned by csm sensor.
+  if (value < 0 || value > 100) {
+  Serial.println("CSM " + sensor + "Error | Value unexpected!");
+  digitalWrite(B_LED_IP, HIGH);
+  delay(200);
+  digitalWrite(B_LED_IP, LOW);
+  delay(600);
+  }
+}
+
+
 void store_data(String research_data) {
-  // Store research data in the sd card.
+  // Store the research data in the sd card.
 
   // Open file.
   File dataFile = SD.open(fileName, FILE_WRITE);
@@ -245,4 +294,3 @@ void store_data(String research_data) {
     Serial.println(research_data);
   }
 }
-

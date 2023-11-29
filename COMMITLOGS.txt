@@ -2,9 +2,27 @@ TODO List
 - Add a file backup system for power outage.
 
 
+Implemented capacitive soil moisture module.
+
+Changes
+- Fixed memory leak that causes a crash in `pd_th_sensor`.
+- Added the following function/s:
+  + read_csm_data
+  + createFileError
+- Renamed the following functions:
+  + sdcm_fail_indicator > sdcmError
+  + write_data > createCSVfile
+  + cycle_indicator > cycleIndicator
+  + cycleIndicator > powerOffLoop
+- Deprecated `dm_cycle_indicator`.
+- Refactored structure, code, and comments.
+- Refactored `README.md`.
+
+
+
 Added a function to store data on sd card in the current file.
 
-Changers
+Changes
 - Added the following function/s:
   + store_data
 
