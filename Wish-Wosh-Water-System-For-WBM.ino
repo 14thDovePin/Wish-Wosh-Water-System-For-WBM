@@ -241,8 +241,8 @@ String pullTHData() {
 
   // Convert data to strings with 2 decimal places.
   String th = "";
-  th += String(temperature, 2) + ',';
-  th += String(humidity, 2) + ',';
+  th += String(temperature, 2) + ",";
+  th += String(humidity, 2) + ",";
 
   return th;
 }
@@ -278,18 +278,26 @@ String pullCSMData() {
     csm4_value
     };
 
-  // Check data validity (0%-100%) and store them as strings.
   String data = "";
-  int count = sizeof(values) / sizeof(values[0]);
-  for (int i=0; i < count; ++i) {
-      if (values[i] > 100 || values[i] < 0) {
-        // Renew string data & indicate error.
-        data += "None,";
-        invalidCSMData(String(i+1));
-      } else {
-        // Concatinate data.
-        data += String(values[i]);
-      }
+  bool invalid = false;
+  String err_msg;
+  // Check data validity (0%-100%) and store them as strings.
+  for (int i=0; i < 4; ++i) {
+    int mapped_data = values[i];
+    if (mapped_data > 100 || mapped_data < 0) {
+      // Renew string data & indicate error.
+      data += "None,";
+      invalid = true;
+      err_msg = String(i+1);
+    } else {
+      // Concatinate data.
+      data += String(mapped_data)+"%,";
+    }
+  }
+
+  // Handle error.
+  if (invalid) {
+    invalidCSMData(err_msg);
   }
 
   return data;

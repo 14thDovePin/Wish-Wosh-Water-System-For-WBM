@@ -4,6 +4,15 @@ TODO List
 - Add `log.txt` file and store all error logs.
 
 
+Fixed CSM Sensor error handling.
+
+Changes
+- Fixed error handling of `pullCSMData`.
+- Fixed string mismatch.
+- Refactored code.
+
+
+
 Restructured and refactored code.
 
 Changes
