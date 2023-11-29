@@ -4,6 +4,15 @@ TODO List
 - Add `log.txt` file and store all error logs.
 
 
+Added CSM callibration flag.
+
+Changes
+- Removed "%" from the data pulled from CSM Sensor.
+- Modified `README.md`.
+- Added callibration flag `callibrateCSMS`.
+
+
+
 Fixed CSM Sensor error handling.
 
 Changes

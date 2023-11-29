@@ -9,7 +9,7 @@
 // Program attributes & flags.
 const int base = 2;  // Cycles per Second
 const bool saveData = true;
-const bool developerMode = false;
+const bool callibrateCSMS = false;
 
 
 // Pinouts.
@@ -27,12 +27,21 @@ const int chipSelect = 10;  // Digital Pin
 DHT dht(DHTPIN, DHTTYPE);   // Initialize class.
 
 // Capacitive Soil Moisture Sensor setup.
-const int DRY_VAL = 459;    // Callibration Value
-const int WET_VAL = 913;    // Callibration Value
-const int CSM1 = A1;        // Analog Pin
-const int CSM2 = A2;        // Analog Pin
+const int CSM1 = A0;        // Analog Pin
+const int DRY_VAL1 = 459;   // Callibrate Value
+const int WET_VAL1 = 913;   // Callibrate Value
+
+const int CSM2 = A1;        // Analog Pin
+const int DRY_VAL2 = 459;   // Callibrate Value
+const int WET_VAL2 = 913;   // Callibrate Value
+
 const int CSM3 = A6;        // Analog Pin
+const int DRY_VAL3 = 459;   // Callibrate Value
+const int WET_VAL3 = 913;   // Callibrate Value
+
 const int CSM4 = A7;        // Analog Pin
+const int DRY_VAL4 = 459;   // Callibrate Value
+const int WET_VAL4 = 913;   // Callibrate Value
 
 
 // Variables for CPS calculation.
@@ -265,10 +274,10 @@ String pullCSMData() {
   int csm4_raw = analogRead(CSM4);
 
   // Map the analog value to a percentage. (0-100%)
-  int csm1_value = map(csm1_raw, WET_VAL, DRY_VAL, 0, 100);
-  int csm2_value = map(csm2_raw, WET_VAL, DRY_VAL, 0, 100);
-  int csm3_value = map(csm3_raw, WET_VAL, DRY_VAL, 0, 100);
-  int csm4_value = map(csm4_raw, WET_VAL, DRY_VAL, 0, 100);
+  int csm1_value = map(csm1_raw, WET_VAL1, DRY_VAL1, 0, 100);
+  int csm2_value = map(csm2_raw, WET_VAL2, DRY_VAL2, 0, 100);
+  int csm3_value = map(csm3_raw, WET_VAL3, DRY_VAL3, 0, 100);
+  int csm4_value = map(csm4_raw, WET_VAL4, DRY_VAL4, 0, 100);
 
   // List all values.
   int values[] = {
@@ -291,13 +300,23 @@ String pullCSMData() {
       err_msg = String(i+1);
     } else {
       // Concatinate data.
-      data += String(mapped_data)+"%,";
+      data += String(mapped_data)+",";
     }
   }
 
   // Handle error.
   if (invalid) {
     invalidCSMData(err_msg);
+  }
+
+  // Callibrate CSM sensor.
+  if (callibrateCSMS) {
+    String raw_data = "";
+    raw_data += String(csm1_raw) + ",";
+    raw_data += String(csm2_raw) + ",";
+    raw_data += String(csm3_raw) + ",";
+    raw_data += String(csm4_raw) + ",";
+    return raw_data;
   }
 
   return data;
