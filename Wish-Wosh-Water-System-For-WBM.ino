@@ -29,7 +29,10 @@ DHT dht(DHTPIN, DHTTYPE);   // Initialize class.
 // Capacitive Soil Moisture Sensor setup.
 const int DRY_VAL = 459;    // Callibration Value
 const int WET_VAL = 913;    // Callibration Value
-const int CSM1 = A7;        // Analog Pin
+const int CSM1 = A1;        // Analog Pin
+const int CSM2 = A2;        // Analog Pin
+const int CSM3 = A6;        // Analog Pin
+const int CSM4 = A7;        // Analog Pin
 
 
 // Variables for CPS calculation.
@@ -83,14 +86,19 @@ void cycle() {
   cycleIndicator();
 
   // Check sd card initialization.
-  check_sdcm();
+  checkSDCM();
 
   // Pull research data.
-  String th = pd_th_sensor();    // Temperature & Humidity
-  String sm = read_csm_data();   // Soil Moisture
+  String th = pullTHData();    // Temperature & Humidity
+  String sm = pullCSMData();   // Soil Moisture
 
-  Serial.println(sm);
-  // store_data(th);
+  // Concatinate & store data.
+  String final = th + sm;
+  if (saveData) {
+  storeData(final);
+  }
+
+  Serial.println(final);
 }
 
 
@@ -112,6 +120,7 @@ void sdcmInitialize() {
 
 void sdcmError() {
   // SD card module fail indicator.
+  Serial.println("File or Disk Error..");
   while (true) {
     digitalWrite(A_LED_IP, HIGH);
     delay(400);
@@ -146,8 +155,8 @@ void createCSVfile() {
     dataFile.print("Time,");
     dataFile.print("Temperature,");
     dataFile.print("Humidity,");
-    dataFile.print("Soil Moisture,");
-    dataFile.println("Spray Count");
+    dataFile.print("SoilMoisture_1234,");
+    dataFile.println("SprayCount_1234");
 
     // Close file.
     dataFile.close();
@@ -209,9 +218,7 @@ void powerOffLoop() {
 }
 
 
-
-
-void check_sdcm() {
+void checkSDCM() {
   // Check SD card module.
   if (!SD.begin(chipSelect)) {
     sdcmError();
@@ -219,78 +226,96 @@ void check_sdcm() {
 }
 
 
-String pd_th_sensor() {
-  // Return data from DHT11 temperature & humidity sensor.
+String pullTHData() {
+  // Return data from the temperature and humidity sensor.
   float humidity = dht.readHumidity();
-  // Callibrated according to weather & another
-  // temperature measuring instrument.
   float temperature = dht.readTemperature() - 2;
+  // Temperature callibrated according to weather report
+  // and another temperature measuring instrument.
 
-  // Check if readings are valid.
+  // Check data validity.
   if (isnan(humidity) || isnan(temperature)) {
-    pd_th_sensor_error();
+    invalidTHData();
     return String("None,None,");
   }
 
-  // Convert temperature and humidity to strings with 2 decimal places.
-  String th = String(temperature, 2);
-  th += ',';
-  th += String(humidity, 2);
-  th += ',';
+  // Convert data to strings with 2 decimal places.
+  String th = "";
+  th += String(temperature, 2) + ',';
+  th += String(humidity, 2) + ',';
 
   return th;
 }
 
 
-void pd_th_sensor_error() {
-  // Indicates temperature & humidity sensor error.
-  Serial.println("TH Sensor Error");
+void invalidTHData() {
+  // Indicates temperature & humidity sensor or data error.
+  Serial.println("TH Sensor||Data Error");
   digitalWrite(A_LED_IP, HIGH);
   delay(200);
   digitalWrite(A_LED_IP, LOW);
-  delay(600);
 }
 
 
-String read_csm_data() {
-  // Read the analog value from the soil moisture sensor
+String pullCSMData() {
+  // Read the analog value from the soil moisture sensor.
   int csm1_raw = analogRead(CSM1);
+  int csm2_raw = analogRead(CSM2);
+  int csm3_raw = analogRead(CSM3);
+  int csm4_raw = analogRead(CSM4);
 
-  // Map the analog value to a percentage (0-100%)
+  // Map the analog value to a percentage. (0-100%)
   int csm1_value = map(csm1_raw, WET_VAL, DRY_VAL, 0, 100);
+  int csm2_value = map(csm2_raw, WET_VAL, DRY_VAL, 0, 100);
+  int csm3_value = map(csm3_raw, WET_VAL, DRY_VAL, 0, 100);
+  int csm4_value = map(csm4_raw, WET_VAL, DRY_VAL, 0, 100);
 
-  // Print the moisture percentage to the serial monitor
+  // List all values.
+  int values[] = {
+    csm1_value,
+    csm2_value,
+    csm3_value,
+    csm4_value
+    };
+
+  // Check data validity (0%-100%) and store them as strings.
   String data = "";
-  data += String(csm1_value)+"%,";
+  int count = sizeof(values) / sizeof(values[0]);
+  for (int i=0; i < count; ++i) {
+      if (values[i] > 100 || values[i] < 0) {
+        // Renew string data & indicate error.
+        data += "None,";
+        invalidCSMData(String(i+1));
+      } else {
+        // Concatinate data.
+        data += String(values[i]);
+      }
+  }
 
   return data;
 }
 
 
-void csm_sensor_error_indicator_(float value, String sensor) {
-  // Check the expected value returned by csm sensor.
-  if (value < 0 || value > 100) {
-  Serial.println("CSM " + sensor + "Error | Value unexpected!");
+void invalidCSMData(String n) {
+  // Indicator light for invalid CSMS data.
+  Serial.println("CSMS["+n+"] Error | Value unexpected!");
   digitalWrite(B_LED_IP, HIGH);
   delay(200);
   digitalWrite(B_LED_IP, LOW);
-  delay(600);
-  }
 }
 
 
-void store_data(String research_data) {
-  // Store the research data in the sd card.
-
+void storeData(String research_data) {
   // Open file.
   File dataFile = SD.open(fileName, FILE_WRITE);
 
-  // Write data into the file.
+  // Check data & write it into the file.
   if (dataFile) {
     dataFile.println(research_data);
+  } else {
+    sdcmError();
+  }
 
   // Close file.
-    dataFile.close();
-    Serial.println(research_data);
-  }
+  dataFile.close();
 }

@@ -1,5 +1,22 @@
 TODO List
 - Add a file backup system for power outage.
+- Add `println` and tmie of print to all error functions.
+- Add `log.txt` file and store all error logs.
+
+
+Restructured and refactored code.
+
+Changes
+-Renamed the following functions:
+  + check_sdcm > checkSDCM
+  + pd_th_sensor > pullTHData
+  + pd_th_sensor_error > invalidTHData
+  + read_csm_data > pullCSMData
+  + csm_sensor_error_indicator_ > invalidCSMData
+  + store_data > storeData
+- Updated csv headers.
+- Refactored structure, code, and comments.
+
 
 
 Implemented capacitive soil moisture module.
