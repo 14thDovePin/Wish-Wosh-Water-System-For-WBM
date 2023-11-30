@@ -4,6 +4,23 @@ TODO List
 - Add `log.txt` file and store all error logs.
 
 
+Implemented clock module.
+
+Changes
+- Modified `README.md`.
+-
+- Added the following function/s:
+  + clockModuleInitialize
+  + clockModuleRequest
+  + clockModuleSet
+  + getCurrentDT
+  + parseDigits
+- Created a new Python file `set_time.py`.
+- Code for `set_time.py` written by ChatGPT.
+- Refactored code.
+
+
+
 Added CSM callibration flag.
 
 Changes

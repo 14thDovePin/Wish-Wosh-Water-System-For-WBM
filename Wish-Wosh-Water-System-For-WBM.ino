@@ -2,13 +2,17 @@
 #include <SPI.h>
 #include <SD.h>
 
+// Dependencies and libraries for the Clock Module.
+#include <Ds1302.h>
+
 // Dependencies and libraries for the Temperature & Humidity Sensor.
 #include <DHT.h>
 
 
 // Program attributes & flags.
 const int base = 2;  // Cycles per Second
-const bool saveData = true;
+const bool saveData = false;
+const bool setClock = false;
 const bool callibrateCSMS = false;
 
 
@@ -20,6 +24,22 @@ const int P_OFF = A2;       // Power Off Button
 
 // SD Card Module setup.
 const int chipSelect = 10;  // Digital Pin
+
+// Clock Codule setup.
+const int CLK_PIN = 6;      // CLK  ->  Digital Pin
+const int DATA_PIN = 7;     // DATA ->  Digital Pin
+const int RST_PIN = 8;      // RST  ->  Digital Pin
+Ds1302 rtc(RST_PIN, CLK_PIN, DATA_PIN);
+
+const static char* WeekDays[] = {
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday"
+};
 
 // Temperature & Humidity Sensor setup.
 #define DHTPIN 9            // Digital Pin
@@ -70,8 +90,9 @@ void setup() {
   pinMode(P_OFF, INPUT_PULLUP);
 
   // Initialize modules and devices.
-  sdcmInitialize();  // SD Card Module
-  dht.begin();       // Temperature & Humidity Sensor
+  sdcmInitialize();         // SD Card Module
+  clockModuleInitialize();  // Clock Moodule
+  dht.begin();              // Temperature & Humidity Sensor
 }
 
 
@@ -97,6 +118,9 @@ void cycle() {
   // Check sd card initialization.
   checkSDCM();
 
+  // Print current date & time.
+  Serial.println(getCurrentDT());
+
   // Pull research data.
   String th = pullTHData();    // Temperature & Humidity
   String sm = pullCSMData();   // Soil Moisture
@@ -107,7 +131,7 @@ void cycle() {
   storeData(final);
   }
 
-  Serial.println(final);
+  // Serial.println(final);
 }
 
 
@@ -129,7 +153,8 @@ void sdcmInitialize() {
 
 void sdcmError() {
   // SD card module fail indicator.
-  Serial.println("File or Disk Error..");
+  if (!saveData) return;
+  Serial.println("SDCMError | File or disk failure.");
   while (true) {
     digitalWrite(A_LED_IP, HIGH);
     delay(400);
@@ -198,6 +223,165 @@ void createFileError() {
     digitalWrite(B_LED_IP, LOW);
     delay(100);
   }
+}
+
+
+void clockModuleInitialize() {
+  // Initialize clock module.
+  rtc.init();
+  Serial.println("Clock Module Initialized..");
+
+  // Check for clock module power loss.
+  if (rtc.isHalted()) {
+    setClockModuleTime();
+  }
+}
+
+
+void setClockModuleTime() {
+  // Check for clock module power loss.
+  Serial.println(
+    "Clock module power loss detected!\n"
+    "Requesting time.."
+  );
+
+  // Send a request to the PC
+  Serial.println("REQ_TIME");
+
+  // Wait for the response from the PC
+  while (!Serial.available()) {
+    clockModuleRequest();
+  }
+
+  // Read time from Serial
+  String receivedTime = Serial.readString();
+  Serial.print("Received time: ");
+  Serial.println(receivedTime);
+
+  // Parse received time and set the clock module's time.
+  Ds1302::DateTime dt;
+  sscanf(receivedTime.c_str(), "%d-%d-%d %d:%d:%d",
+          &dt.year, &dt.month, &dt.day, &dt.hour, &dt.minute, &dt.second);
+
+  rtc.setDateTime(&dt);
+
+  // Indicate successful request & process.
+  clockModuleSet();
+}
+
+
+void clockModuleRequest () {
+  // Inidicate Clock Module requesting time.
+  digitalWrite(A_LED_IP, HIGH);
+  delay(200);
+  digitalWrite(A_LED_IP, LOW);
+  delay(50);
+  digitalWrite(A_LED_IP, HIGH);
+  delay(200);
+  digitalWrite(A_LED_IP, LOW);
+  delay(50);
+
+  digitalWrite(B_LED_IP, HIGH);
+  delay(200);
+  digitalWrite(B_LED_IP, LOW);
+  delay(50);
+  digitalWrite(B_LED_IP, HIGH);
+  delay(200);
+  digitalWrite(B_LED_IP, LOW);
+  delay(50);
+}
+
+
+void clockModuleSet() {
+  // Indicate Clock Module successful request & process.
+  for (int i=0; i<3; i++) {
+    digitalWrite(CPS_LED_IP, HIGH);
+    delay(300);
+    digitalWrite(CPS_LED_IP, LOW);
+    digitalWrite(A_LED_IP, HIGH);
+    delay(300);
+    digitalWrite(A_LED_IP, LOW);
+    digitalWrite(B_LED_IP, HIGH);
+    delay(300);
+    digitalWrite(B_LED_IP, LOW);
+  }
+}
+
+
+String getCurrentDT() {
+  // Return the current date and time string.
+  Ds1302::DateTime now;
+  rtc.getDateTime(&now);
+  String dt = "";
+
+
+
+  if (!rtc.isHalted()) {  // DEBUG
+    Serial.print("Raw Seconds: ");
+    Serial.println(now.second);
+  } else {
+    Serial.println("DS1302 is halted.");
+  }
+
+
+
+  static uint8_t last_second = 0;
+  if (last_second != now.second) {
+    last_second = now.second;
+
+    // Serial.print("20");
+    // Serial.print(now.year);    // 00-99
+    // Serial.print("-");
+    // if (now.month < 10) Serial.print("0");
+    // Serial.print(now.month);   // 01-12
+    // Serial.print("-");
+    // if (now.day < 10) Serial.print("0");
+    // Serial.print(now.day);     // 01-31
+    // Serial.print(" ");
+    // Serial.print(WeekDays[now.dow - 1]); // 1-7
+    // Serial.print(" ");
+    // if (now.hour < 10) Serial.print("0");
+    // Serial.print(now.hour);    // 00-23
+    // Serial.print(":");
+    // if (now.minute < 10) Serial.print("0");
+    // Serial.print(now.minute);  // 00-59
+    // Serial.print(":");
+    // if (now.second < 10) Serial.print("0");
+    // Serial.print(now.second);  // 00-59
+    // Serial.println();
+
+    // Date & Time Format -> MM/DD/YYYY HH/MM/SS
+    if (now.month < 10) dt += "0";
+    dt += now.month;                // 01-12
+    dt += "/";
+    if (now.day < 10) dt += "0";
+    dt += now.day;                  // 01-31
+    dt += "/";
+    dt += "20";
+    dt += now.year;                 // 00-99
+
+    dt += " ";
+    if (now.hour < 10) dt += "0";
+    dt += now.hour;                 // 00-23
+    dt += ":";
+    if (now.minute < 10) dt += "0";
+    dt += now.minute;               // 00-59
+    dt += ":";
+    if (now.second < 10) dt += "0";
+    dt += now.second;               // 00-59
+
+    return dt;
+  } else {
+    return "01/01/2000 00:00:00";
+  }
+}
+
+
+uint8_t parseDigits(char* str, uint8_t count) {
+  // Parse digits for the clock module.
+  uint8_t val = 0;
+  while(count-- > 0) val = (val * 10) + (*str++ - '0');
+  return val;
 }
 
 

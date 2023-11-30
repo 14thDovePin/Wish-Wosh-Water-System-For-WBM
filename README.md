@@ -5,13 +5,12 @@ This system was designed for a group research project of *14thDovePin* back in h
 
 ## Research Data
 This setup is only designed to log the following data while cultivating WBMs:
-- Date & Time
+- Date
+- Time
 - Relative Humidity
 - Temperature
 - Soil Moisture Content
 - Spray Count
-
-Regarding **Date & Time**. Due to the research's time scope, and financial constraints. The code for this system does not support date and time as the hardware didn't include a clock module. The **Date & Time** data will be calculated using the `millis()` function. Therefore, the researchers are required to log the current *Date* and the current *Time* when they power up the micro controller and calculate the final **Date & Time** data for their use case.
 
 ## Indicator Lights
 There are 3 indicator lights accordingly as followed:  
@@ -41,4 +40,6 @@ There are 3 indicator lights accordingly as followed:
 [B] [B] ...  
 [R<sub>A</sub>] [R<sub>B</sub>] ... [R<sub>A</sub>] [R<sub>B</sub>] ---
 
-Title courtesy of ***Snowphira***.
+## Footnotes
+- The IC of the RTC Module is a`DS1302`.
+- Title courtesy of ***Snowphira***.
