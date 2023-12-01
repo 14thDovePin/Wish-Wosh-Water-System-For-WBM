@@ -10,11 +10,11 @@
 
 
 // Program attributes & flags.
-const int base = 2;  // Cycles per Second
-const bool debugMode = true;
+const int base = 4;  // Cycles per Second
 const bool saveData = true;
-const bool setClock = false;
 const bool callibrateCSMS = false;
+const bool debugMode = false;
+const bool setClock = false;
 
 
 // Pinouts.
@@ -49,20 +49,20 @@ DHT dht(DHTPIN, DHTTYPE);   // Initialize class.
 
 // Capacitive Soil Moisture Sensor setup.
 const int CSM1 = A0;        // Analog Pin
-const int DRY_VAL1 = 459;   // Callibrate Value
-const int WET_VAL1 = 913;   // Callibrate Value
+const int DRY_VAL1 = 497;   // Callibrate Value
+const int WET_VAL1 = 877;   // Callibrate Value
 
 const int CSM2 = A1;        // Analog Pin
-const int DRY_VAL2 = 459;   // Callibrate Value
-const int WET_VAL2 = 913;   // Callibrate Value
+const int DRY_VAL2 = 483;   // Callibrate Value
+const int WET_VAL2 = 853;   // Callibrate Value
 
 const int CSM3 = A6;        // Analog Pin
-const int DRY_VAL3 = 459;   // Callibrate Value
-const int WET_VAL3 = 913;   // Callibrate Value
+const int DRY_VAL3 = 488;   // Callibrate Value
+const int WET_VAL3 = 871;   // Callibrate Value
 
 const int CSM4 = A7;        // Analog Pin
-const int DRY_VAL4 = 459;   // Callibrate Value
-const int WET_VAL4 = 913;   // Callibrate Value
+const int DRY_VAL4 = 481;   // Callibrate Value
+const int WET_VAL4 = 869;   // Callibrate Value
 
 
 // Variables for CPS calculation.
@@ -70,7 +70,6 @@ const int mult = 1000;
 const int cps = base * mult;
 unsigned long previousMillis = 0;
 
-unsigned long startTime;
 String fileName;            // Current File
 String logFileName;         // Current Log File
 
@@ -122,15 +121,19 @@ void cycle() {
   // Check sd card initialization.
   checkSDCM();
 
-  // Print current date & time.
-  printLog(getCurrentDT());
+  // Pull current date & time.
+  String dt = getCurrentDT();
+
+  // Calculate time elapsed.
+  String te = String(millis()/1000)+",";
 
   // Pull research data.
   String th = pullTHData();    // Temperature & Humidity
   String sm = pullCSMData();   // Soil Moisture
+  String sc = "None,None,None,None";// Spray Count
 
   // Concatinate & store data.
-  String final = th + sm;
+  String final = dt+te+th+sm+sc;
   if (saveData) {
   storeData(final);
   }
@@ -192,21 +195,21 @@ void createCSVfile() {
     String headers = "";
     headers += "Date,";
     headers += "Time,";
-    headers += "TimeElapsed,"
+    headers += "TimeElapsed,";
     headers += "Temperature,";
     headers += "Humidity,";
     headers += "SoilMoisture_1,";
-    headers += "SprayCounter_1";
     headers += "SoilMoisture_2,";
-    headers += "SprayCounter_2";
     headers += "SoilMoisture_3,";
-    headers += "SprayCounter_3";
     headers += "SoilMoisture_4,";
+    headers += "SprayCounter_1";
+    headers += "SprayCounter_2";
+    headers += "SprayCounter_3";
     headers += "SprayCounter_4";
     dataFile.println(headers);
 
     dataFile.close();
-    printLog("File Created: `" + fileName + "`.");
+    Serial.println("File Created: `" + fileName + "`.");
   } else {
     Serial.println("Error Creating: `" + fileName + "`.");
     createFileError();
@@ -218,7 +221,7 @@ void createCSVfile() {
 
   if (logFile) {
     logFile.close();
-    printLog("File Created: `" + logFileName + "`.");
+    Serial.println("File Created: `" + logFileName + "`.");
   } else {
     Serial.println("Error Creating: `" + logFileName + "`.");
   }
@@ -252,7 +255,7 @@ void createFileError() {
 void clockModuleInitialize() {
   // Initialize clock module.
   rtc.init();
-  printLog("Clock Module Initialized..");
+  Serial.println("Clock Module Initialized..");
 
   // Check for clock module power loss.
   if (rtc.isHalted()) {
@@ -400,10 +403,11 @@ String getCurrentDT() {
     dt += ":";
     if (now.second < 10) dt += "0";
     dt += now.second;               // 00-59
+    dt += ",";
 
     return dt;
   } else {
-    return "01/01/2000,00:00:00";
+    return "01/01/2000,00:00:00,";
   }
 }
 
@@ -518,10 +522,13 @@ String pullCSMData() {
       data += String(mapped_data)+",";
     }
   }
+  Serial.println(err_msg);
 
   // Handle error.
   if (invalid) {
+  Serial.println("test");
     invalidCSMData(err_msg);
+  Serial.println("test1");
   }
 
   // Callibrate CSM sensor.
@@ -533,6 +540,7 @@ String pullCSMData() {
     raw_data += String(csm4_raw) + ",";
     return raw_data;
   }
+  Serial.println("test7");
 
   return data;
 }
@@ -563,7 +571,13 @@ void storeData(String research_data) {
 }
 
 
-void printLog(String text) {
+void printLog(String text_input) {
+  // Insert calculated time elapsed.
+  String te = "[" + String(millis()/1000) + "] -> ";
+  String text = te+text_input;
+
+  Serial.println("Received Log: " + text);
+
   // Open log file.
   File logFile = SD.open(logFileName, FILE_WRITE);
 

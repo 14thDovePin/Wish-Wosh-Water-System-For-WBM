@@ -1,14 +1,33 @@
 TODO List
-- Add a file backup system for power outage.
-- Add time of print to `printLog`.
 - Implement setClock flag.
     This feature should only run once by creating a file when
     it has never ran. Then the consecutive runs will check for
     said file if the clock has been set or not. And to reset the
     system, just delete the file itself.
+- Fix data saving of sensor output.
+  + SprayCounter_1
+  + SprayCounter_2
+  + SprayCounter_3
+  + SprayCounter_4
 - Extend cycles to 5s in the final output.
+
+- ?Add a file backup system for power outage.
 - ?Fix cycles, don't use delay, use millis instead.
 - ?Break out into multiple files.
+
+
+Fixed research data storing and callibrated CMS.
+
+Changes
+- Callibrated CMS.
+- Organized CSV headers again.
+- Fixed the following research data return value/s:
+  + Date & Time
+  + Time Elapsed
+- Added time elapsed to `printLog` for time reference.
+- Severe `SDCMError | File or disk failure.` bug encountered.
+- Refactored code.
+
 
 
 Modified csv headers.
