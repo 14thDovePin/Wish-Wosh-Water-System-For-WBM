@@ -10,7 +10,7 @@
 
 
 // Program attributes & flags.
-const int base = 4;  // Cycles per Second
+const int base = 2;  // Cycles per Second
 const bool saveData = true;
 const bool callibrateCSMS = false;
 const bool debugMode = false;
@@ -92,7 +92,7 @@ void setup() {
 
   // Initialize essential modules.
   sdcmInitialize();         // SD Card Module
-  clockModuleInitialize();  // Clock Moodule
+  // clockModuleInitialize();  // Clock Moodule
 
   // Manage sensors and devices.
   dht.begin();              // Temperature & Humidity Sensor
@@ -122,7 +122,8 @@ void cycle() {
   checkSDCM();
 
   // Pull current date & time.
-  String dt = getCurrentDT();
+  // String dt = getCurrentDT();
+  String dt = "None,None,";
 
   // Calculate time elapsed.
   String te = String(millis()/1000)+",";
@@ -138,7 +139,7 @@ void cycle() {
   storeData(final);
   }
 
-  // printLog(final);
+  Serial.println(final);
 }
 
 
@@ -202,13 +203,12 @@ void createCSVfile() {
     headers += "SoilMoisture_2,";
     headers += "SoilMoisture_3,";
     headers += "SoilMoisture_4,";
-    headers += "SprayCounter_1";
-    headers += "SprayCounter_2";
-    headers += "SprayCounter_3";
+    headers += "SprayCounter_1,";
+    headers += "SprayCounter_2,";
+    headers += "SprayCounter_3,";
     headers += "SprayCounter_4";
     dataFile.println(headers);
 
-    dataFile.close();
     Serial.println("File Created: `" + fileName + "`.");
   } else {
     Serial.println("Error Creating: `" + fileName + "`.");
@@ -220,11 +220,15 @@ void createCSVfile() {
   File logFile = SD.open(logFileName, FILE_WRITE);
 
   if (logFile) {
-    logFile.close();
     Serial.println("File Created: `" + logFileName + "`.");
   } else {
     Serial.println("Error Creating: `" + logFileName + "`.");
+    createFileError();
   }
+
+  // Close files.
+  dataFile.close();
+  logFile.close();
 }
 
 
@@ -232,20 +236,16 @@ void createFileError() {
   // File creation fail indicator.
   while (true) {
     digitalWrite(A_LED_IP, HIGH);
-    delay(150);
+    delay(175);
     digitalWrite(A_LED_IP, LOW);
     delay(50);
     digitalWrite(A_LED_IP, HIGH);
-    delay(150);
+    delay(175);
     digitalWrite(A_LED_IP, LOW);
     delay(100);
 
     digitalWrite(B_LED_IP, HIGH);
-    delay(150);
-    digitalWrite(B_LED_IP, LOW);
-    delay(50);
-    digitalWrite(B_LED_IP, HIGH);
-    delay(150);
+    delay(400);
     digitalWrite(B_LED_IP, LOW);
     delay(100);
   }
@@ -272,7 +272,7 @@ void setClockModuleTime() {
   );
 
   // Send a request to the PC
-  printLog("REQ_TIME");
+  Serial.println("REQ_TIME");
 
   // Wait for the response from the PC
   while (!Serial.available()) {
@@ -412,12 +412,12 @@ String getCurrentDT() {
 }
 
 
-uint8_t parseDigits(char* str, uint8_t count) {
-  // Parse digits for the clock module.
-  uint8_t val = 0;
-  while(count-- > 0) val = (val * 10) + (*str++ - '0');
-  return val;
-}
+// uint8_t parseDigits(char* str, uint8_t count) {
+//   // Parse digits for the clock module.
+//   uint8_t val = 0;
+//   while(count-- > 0) val = (val * 10) + (*str++ - '0');
+//   return val;
+// }
 
 
 void cycleIndicator() {
@@ -512,23 +512,20 @@ String pullCSMData() {
   // Check data validity (0%-100%) and store them as strings.
   for (int i=0; i < 4; ++i) {
     int mapped_data = values[i];
-    if (mapped_data > 100 || mapped_data < 0) {
+    if (mapped_data < 0 || mapped_data > 100) {
       // Renew string data & indicate error.
       data += "None,";
       invalid = true;
-      err_msg = String(i+1);
+      err_msg += String(i+1);
     } else {
       // Concatinate data.
       data += String(mapped_data)+",";
     }
   }
-  Serial.println(err_msg);
 
   // Handle error.
   if (invalid) {
-  Serial.println("test");
     invalidCSMData(err_msg);
-  Serial.println("test1");
   }
 
   // Callibrate CSM sensor.
@@ -540,7 +537,6 @@ String pullCSMData() {
     raw_data += String(csm4_raw) + ",";
     return raw_data;
   }
-  Serial.println("test7");
 
   return data;
 }
@@ -575,8 +571,6 @@ void printLog(String text_input) {
   // Insert calculated time elapsed.
   String te = "[" + String(millis()/1000) + "] -> ";
   String text = te+text_input;
-
-  Serial.println("Received Log: " + text);
 
   // Open log file.
   File logFile = SD.open(logFileName, FILE_WRITE);

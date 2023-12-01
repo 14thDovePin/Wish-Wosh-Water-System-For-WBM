@@ -16,6 +16,17 @@ TODO List
 - ?Break out into multiple files.
 
 
+Cleaned code, removed unecessary parts.
+
+Changes
+- Fixed headers.
+- Commented out `parseDigits`.
+- Excluded anything clock module related.
+- Fixed severe `SDCMError | File or disk failure.`.
+  Seems to be caused by the faulty clock module.
+
+
+
 Fixed research data storing and callibrated CMS.
 
 Changes
