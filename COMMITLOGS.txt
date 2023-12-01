@@ -1,7 +1,22 @@
 TODO List
 - Add a file backup system for power outage.
 - Add time of print to `printLog`.
-- Fix cycles, don't use delay, use millis instead.
+- Implement setClock flag.
+    This feature should only run once by creating a file when
+    it has never ran. Then the consecutive runs will check for
+    said file if the clock has been set or not. And to reset the
+    system, just delete the file itself.
+- Extend cycles to 5s in the final output.
+- ?Fix cycles, don't use delay, use millis instead.
+- ?Break out into multiple files.
+
+
+Modified csv headers.
+
+Changes
+- Added `TimeElapsed` and refactored csv headers.
+- Refactored code.
+
 
 
 Implemented logging system.

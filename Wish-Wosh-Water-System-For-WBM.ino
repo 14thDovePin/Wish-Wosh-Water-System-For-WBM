@@ -192,10 +192,17 @@ void createCSVfile() {
     String headers = "";
     headers += "Date,";
     headers += "Time,";
+    headers += "TimeElapsed,"
     headers += "Temperature,";
     headers += "Humidity,";
-    headers += "SoilMoisture_1234,";
-    headers += "SprayCount_1234";
+    headers += "SoilMoisture_1,";
+    headers += "SprayCounter_1";
+    headers += "SoilMoisture_2,";
+    headers += "SprayCounter_2";
+    headers += "SoilMoisture_3,";
+    headers += "SprayCounter_3";
+    headers += "SoilMoisture_4,";
+    headers += "SprayCounter_4";
     dataFile.println(headers);
 
     dataFile.close();
