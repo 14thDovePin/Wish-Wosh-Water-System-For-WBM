@@ -16,9 +16,11 @@ def send_time_to_arduino(serial_port, current_time):
 
         # Send the current time to Arduino
         ser.write(current_time.encode())
+        time.sleep(0.1)
         print(f"Sent time to Arduino: {current_time}")
 
 
 if __name__ == "__main__":
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_time = \
+        datetime.datetime.now().strftime("%m/%d/%y %H:%M:%S")
     send_time_to_arduino(SERIAL_PORT, current_time)

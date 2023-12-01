@@ -1,7 +1,18 @@
 TODO List
 - Add a file backup system for power outage.
-- Add `println` and tmie of print to all error functions.
-- Add `log.txt` file and store all error logs.
+- Add time of print to `printLog`.
+- Fix cycles, don't use delay, use millis instead.
+
+
+Implemented logging system.
+
+Changes
+- Added the following function/s:
+  + printLog
+- Modified `createCSVfile` function to also create a log file.
+- Replaced almost all `Serial.println` functions with `printLog`.
+- Added a debugging flag.
+
 
 
 Implemented clock module.

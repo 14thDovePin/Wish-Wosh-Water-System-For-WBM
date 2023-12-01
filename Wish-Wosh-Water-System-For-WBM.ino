@@ -11,7 +11,8 @@
 
 // Program attributes & flags.
 const int base = 2;  // Cycles per Second
-const bool saveData = false;
+const bool debugMode = true;
+const bool saveData = true;
 const bool setClock = false;
 const bool callibrateCSMS = false;
 
@@ -71,6 +72,7 @@ unsigned long previousMillis = 0;
 
 unsigned long startTime;
 String fileName;            // Current File
+String logFileName;         // Current Log File
 
 
 void setup() {
@@ -89,9 +91,11 @@ void setup() {
   pinMode(B_LED_IP, OUTPUT);
   pinMode(P_OFF, INPUT_PULLUP);
 
-  // Initialize modules and devices.
+  // Initialize essential modules.
   sdcmInitialize();         // SD Card Module
   clockModuleInitialize();  // Clock Moodule
+
+  // Manage sensors and devices.
   dht.begin();              // Temperature & Humidity Sensor
 }
 
@@ -119,7 +123,7 @@ void cycle() {
   checkSDCM();
 
   // Print current date & time.
-  Serial.println(getCurrentDT());
+  printLog(getCurrentDT());
 
   // Pull research data.
   String th = pullTHData();    // Temperature & Humidity
@@ -131,7 +135,7 @@ void cycle() {
   storeData(final);
   }
 
-  // Serial.println(final);
+  // printLog(final);
 }
 
 
@@ -178,26 +182,38 @@ void createCSVfile() {
   while (SD.exists("data_" + String(fileIndex) + fileExtension)) {
     fileIndex++;
   }
-  fileName = "data_" + String(fileIndex) + fileExtension;
 
-  // Create csv file.
+  // Create and check csv file.
+  fileName = "data_" + String(fileIndex) + fileExtension;
   File dataFile = SD.open(fileName, FILE_WRITE);
 
   if (dataFile) {
     // Write csv headers into the file.
-    dataFile.print("Date,");
-    dataFile.print("Time,");
-    dataFile.print("Temperature,");
-    dataFile.print("Humidity,");
-    dataFile.print("SoilMoisture_1234,");
-    dataFile.println("SprayCount_1234");
+    String headers = "";
+    headers += "Date,";
+    headers += "Time,";
+    headers += "Temperature,";
+    headers += "Humidity,";
+    headers += "SoilMoisture_1234,";
+    headers += "SprayCount_1234";
+    dataFile.println(headers);
 
-    // Close file.
     dataFile.close();
-    Serial.println("File Created: `" + fileName + "`.");
+    printLog("File Created: `" + fileName + "`.");
   } else {
     Serial.println("Error Creating: `" + fileName + "`.");
     createFileError();
+  }
+
+  // Create and check log file.
+  logFileName = "log_" + String(fileIndex) + ".txt";
+  File logFile = SD.open(logFileName, FILE_WRITE);
+
+  if (logFile) {
+    logFile.close();
+    printLog("File Created: `" + logFileName + "`.");
+  } else {
+    Serial.println("Error Creating: `" + logFileName + "`.");
   }
 }
 
@@ -229,7 +245,7 @@ void createFileError() {
 void clockModuleInitialize() {
   // Initialize clock module.
   rtc.init();
-  Serial.println("Clock Module Initialized..");
+  printLog("Clock Module Initialized..");
 
   // Check for clock module power loss.
   if (rtc.isHalted()) {
@@ -240,13 +256,13 @@ void clockModuleInitialize() {
 
 void setClockModuleTime() {
   // Check for clock module power loss.
-  Serial.println(
+  printLog(
     "Clock module power loss detected!\n"
     "Requesting time.."
   );
 
   // Send a request to the PC
-  Serial.println("REQ_TIME");
+  printLog("REQ_TIME");
 
   // Wait for the response from the PC
   while (!Serial.available()) {
@@ -255,13 +271,53 @@ void setClockModuleTime() {
 
   // Read time from Serial
   String receivedTime = Serial.readString();
-  Serial.print("Received time: ");
-  Serial.println(receivedTime);
+  printLog("Received time: "+receivedTime);
 
   // Parse received time and set the clock module's time.
   Ds1302::DateTime dt;
-  sscanf(receivedTime.c_str(), "%d-%d-%d %d:%d:%d",
-          &dt.year, &dt.month, &dt.day, &dt.hour, &dt.minute, &dt.second);
+  sscanf(
+    receivedTime.c_str(),
+      "%hhu/%hhu/%hu %hhu:%hhu:%hhu",
+      &dt.month,
+      &dt.day,
+      &dt.year,
+      &dt.hour,
+      &dt.minute,
+      &dt.second
+    );
+
+  if (debugMode) {
+    printLog("Clock Module Debugging..");
+    printLog("Parsed DT Values: ");
+    printLog("Month: "+String(dt.month));
+    printLog("Day: "+String(dt.day));
+    printLog("Year: "+String(dt.year));
+    printLog("Hour: "+String(dt.hour));
+    printLog("Minute: "+String(dt.minute));
+    printLog("Second: "+String(dt.second));
+
+    uint8_t month, day, year, hour, minute, second;
+
+    sscanf(
+      receivedTime.c_str(),
+      // "%d/%d/%d %d:%d:%d",
+      "%hhu/%hhu/%hu %hhu:%hhu:%hhu",
+      &month,
+      &day,
+      &year,
+      &hour,
+      &minute,
+      &second
+    );
+
+    printLog("Parsed Raw Values: ");
+    printLog("Month: "+String(month));
+    printLog("Day: "+String(day));
+    printLog("Year: "+String(year));
+    printLog("Hour: "+String(hour));
+    printLog("Minute: "+String(minute));
+    printLog("Second: "+String(second));
+  }
 
   rtc.setDateTime(&dt);
 
@@ -314,41 +370,9 @@ String getCurrentDT() {
   rtc.getDateTime(&now);
   String dt = "";
 
-
-
-  if (!rtc.isHalted()) {  // DEBUG
-    Serial.print("Raw Seconds: ");
-    Serial.println(now.second);
-  } else {
-    Serial.println("DS1302 is halted.");
-  }
-
-
-
   static uint8_t last_second = 0;
   if (last_second != now.second) {
     last_second = now.second;
-
-    // Serial.print("20");
-    // Serial.print(now.year);    // 00-99
-    // Serial.print("-");
-    // if (now.month < 10) Serial.print("0");
-    // Serial.print(now.month);   // 01-12
-    // Serial.print("-");
-    // if (now.day < 10) Serial.print("0");
-    // Serial.print(now.day);     // 01-31
-    // Serial.print(" ");
-    // Serial.print(WeekDays[now.dow - 1]); // 1-7
-    // Serial.print(" ");
-    // if (now.hour < 10) Serial.print("0");
-    // Serial.print(now.hour);    // 00-23
-    // Serial.print(":");
-    // if (now.minute < 10) Serial.print("0");
-    // Serial.print(now.minute);  // 00-59
-    // Serial.print(":");
-    // if (now.second < 10) Serial.print("0");
-    // Serial.print(now.second);  // 00-59
-    // Serial.println();
 
     // Date & Time Format -> MM/DD/YYYY HH/MM/SS
     if (now.month < 10) dt += "0";
@@ -360,7 +384,7 @@ String getCurrentDT() {
     dt += "20";
     dt += now.year;                 // 00-99
 
-    dt += " ";
+    dt += ",";
     if (now.hour < 10) dt += "0";
     dt += now.hour;                 // 00-23
     dt += ":";
@@ -372,7 +396,7 @@ String getCurrentDT() {
 
     return dt;
   } else {
-    return "01/01/2000 00:00:00";
+    return "01/01/2000,00:00:00";
   }
 }
 
@@ -443,7 +467,7 @@ String pullTHData() {
 
 void invalidTHData() {
   // Indicates temperature & humidity sensor or data error.
-  Serial.println("TH Sensor||Data Error");
+  printLog("TH Sensor||Data Error");
   digitalWrite(A_LED_IP, HIGH);
   delay(200);
   digitalWrite(A_LED_IP, LOW);
@@ -509,7 +533,7 @@ String pullCSMData() {
 
 void invalidCSMData(String n) {
   // Indicator light for invalid CSMS data.
-  Serial.println("CSMS["+n+"] Error | Value unexpected!");
+  printLog("CSMS["+n+"] Error | Value unexpected!");
   digitalWrite(B_LED_IP, HIGH);
   delay(200);
   digitalWrite(B_LED_IP, LOW);
@@ -529,4 +553,21 @@ void storeData(String research_data) {
 
   // Close file.
   dataFile.close();
+}
+
+
+void printLog(String text) {
+  // Open log file.
+  File logFile = SD.open(logFileName, FILE_WRITE);
+
+  // Check data & write it into the file.
+  if (logFile) {
+    Serial.println(text);
+    logFile.println(text);
+  } else {
+    sdcmError();
+  }
+
+  // Close file.
+  logFile.close();
 }
