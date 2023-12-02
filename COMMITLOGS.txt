@@ -1,9 +1,5 @@
 TODO List
-- Implement setClock flag.
-    This feature should only run once by creating a file when
-    it has never ran. Then the consecutive runs will check for
-    said file if the clock has been set or not. And to reset the
-    system, just delete the file itself.
+- Remove most string concatination.
 - Fix data saving of sensor output.
   + SprayCounter_1
   + SprayCounter_2
@@ -11,9 +7,31 @@ TODO List
   + SprayCounter_4
 - Extend cycles to 5s in the final output.
 
+- ?Implement setClock flag.
+    This feature should only run once by creating a file when
+    it has never ran. Then the consecutive runs will check for
+    said file if the clock has been set or not. And to reset the
+    system, just delete the file itself.
 - ?Add a file backup system for power outage.
 - ?Fix cycles, don't use delay, use millis instead.
 - ?Break out into multiple files.
+
+
+Implemented automated atomizer switching & testing.
+
+Changes
+- Added the following functions:
+  + testWA
+  + toggleWA
+  + toggleAtomizer
+- Implemented the code needed to manage all 4 atomizers.
+- Implemented an initial routine for the atomizer.
+- Added a new flag for testing the atomizers `skipAtmozerTest`.
+- Changed how opening and closing file works.
+- Fixed `printLog` disappearing logs.
+- Deprecated `parseDigits`
+- Refactored code.
+
 
 
 Cleaned code, removed unecessary parts.

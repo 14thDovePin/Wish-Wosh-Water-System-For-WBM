@@ -10,11 +10,12 @@
 
 
 // Program attributes & flags.
-const int base = 2;  // Cycles per Second
-const bool saveData = true;
-const bool callibrateCSMS = false;
-const bool debugMode = false;
-const bool setClock = false;
+const int   base            = 2;      // Cycles per Second
+const bool  saveData        = true;
+bool        skipAtmozerTest = false;
+const bool  callibrateCSMS  = false;
+const bool  debugMode       = false;
+const bool  setClock        = false;
 
 
 // Pinouts.
@@ -64,14 +65,21 @@ const int CSM4 = A7;        // Analog Pin
 const int DRY_VAL4 = 481;   // Callibrate Value
 const int WET_VAL4 = 869;   // Callibrate Value
 
+// Water Atomizer setup.
+// Digital pins & their state.
+const int WA[4] = {1, 2, 3, 4};
+bool WA_state[4] = {false, false, false, false};
+
 
 // Variables for CPS calculation.
 const int mult = 1000;
 const int cps = base * mult;
 unsigned long previousMillis = 0;
 
-String fileName;            // Current File
-String logFileName;         // Current Log File
+String dataFileName;        // Data File Name
+File dataFile;              // Data File
+String logFileName;         // Log File Name
+File logFile;               // Log File
 
 
 void setup() {
@@ -89,6 +97,10 @@ void setup() {
   pinMode(A_LED_IP, OUTPUT);
   pinMode(B_LED_IP, OUTPUT);
   pinMode(P_OFF, INPUT_PULLUP);
+  pinMode(WA[0], OUTPUT);
+  pinMode(WA[1], OUTPUT);
+  pinMode(WA[2], OUTPUT);
+  pinMode(WA[3], OUTPUT);
 
   // Initialize essential modules.
   sdcmInitialize();         // SD Card Module
@@ -96,6 +108,10 @@ void setup() {
 
   // Manage sensors and devices.
   dht.begin();              // Temperature & Humidity Sensor
+  if (!skipAtmozerTest) {   // Test Water Atomizers
+    skipAtmozerTest = true;
+    testWA();
+  }
 }
 
 
@@ -163,6 +179,11 @@ void sdcmError() {
   // SD card module fail indicator.
   if (!saveData) return;
   Serial.println("SDCMError | File or disk failure.");
+
+  // Close files.
+  dataFile.close();
+  logFile.close();
+
   while (true) {
     digitalWrite(A_LED_IP, HIGH);
     delay(400);
@@ -188,8 +209,8 @@ void createCSVfile() {
   }
 
   // Create and check csv file.
-  fileName = "data_" + String(fileIndex) + fileExtension;
-  File dataFile = SD.open(fileName, FILE_WRITE);
+  dataFileName = "data_" + String(fileIndex) + fileExtension;
+  dataFile = SD.open(dataFileName, FILE_WRITE);
 
   if (dataFile) {
     // Write csv headers into the file.
@@ -209,15 +230,15 @@ void createCSVfile() {
     headers += "SprayCounter_4";
     dataFile.println(headers);
 
-    Serial.println("File Created: `" + fileName + "`.");
+    Serial.println("File Created: `" + dataFileName + "`.");
   } else {
-    Serial.println("Error Creating: `" + fileName + "`.");
+    Serial.println("Error Creating: `" + dataFileName + "`.");
     createFileError();
   }
 
   // Create and check log file.
   logFileName = "log_" + String(fileIndex) + ".txt";
-  File logFile = SD.open(logFileName, FILE_WRITE);
+  logFile = SD.open(logFileName, FILE_WRITE);
 
   if (logFile) {
     Serial.println("File Created: `" + logFileName + "`.");
@@ -225,15 +246,16 @@ void createCSVfile() {
     Serial.println("Error Creating: `" + logFileName + "`.");
     createFileError();
   }
-
-  // Close files.
-  dataFile.close();
-  logFile.close();
 }
 
 
 void createFileError() {
   // File creation fail indicator.
+
+  // Close files.
+  dataFile.close();
+  logFile.close();
+
   while (true) {
     digitalWrite(A_LED_IP, HIGH);
     delay(175);
@@ -412,14 +434,6 @@ String getCurrentDT() {
 }
 
 
-// uint8_t parseDigits(char* str, uint8_t count) {
-//   // Parse digits for the clock module.
-//   uint8_t val = 0;
-//   while(count-- > 0) val = (val * 10) + (*str++ - '0');
-//   return val;
-// }
-
-
 void cycleIndicator() {
   // Toggles the CPS LED Indicator.
   digitalWrite(CPS_LED_IP, HIGH);
@@ -435,6 +449,11 @@ void cycleIndicator() {
 void powerOffLoop() {
   // Run an infinite loop for safe powering off.
   digitalWrite(CPS_LED_IP, HIGH);
+
+  // Close files.
+  dataFile.close();
+  logFile.close();
+
   while (true) {
     digitalWrite(A_LED_IP, HIGH);
     digitalWrite(B_LED_IP, HIGH);
@@ -508,11 +527,11 @@ String pullCSMData() {
 
   String data = "";
   bool invalid = false;
-  String err_msg;
+  String err_msg = "";
   // Check data validity (0%-100%) and store them as strings.
   for (int i=0; i < 4; ++i) {
     int mapped_data = values[i];
-    if (mapped_data < 0 || mapped_data > 100) {
+    if (mapped_data < -5 || mapped_data > 105) {  // 5% Tolerance
       // Renew string data & indicate error.
       data += "None,";
       invalid = true;
@@ -546,15 +565,62 @@ void invalidCSMData(String n) {
   // Indicator light for invalid CSMS data.
   printLog("CSMS["+n+"] Error | Value unexpected!");
   digitalWrite(B_LED_IP, HIGH);
-  delay(200);
+  delay(150);
   digitalWrite(B_LED_IP, LOW);
+  delay(50);
+}
+
+
+void testWA () {
+  Serial.println("Testing Water Atomizers.");
+  int pattern[3] = {3000, 1000, 1000};
+
+  for (int i = 0; i < 4; i++) {
+    Serial.println("Testing.. Water Atomizer [" + String(i + 1) + "]");
+
+    for (int n = 0; n < 3; n++) {
+      toggleWA(WA[i]);
+      unsigned long startMillis = millis();
+      while (millis() - startMillis < pattern[n]) {}
+      toggleWA(WA[i]);
+
+      startMillis = millis();
+      while (millis() - startMillis < 500) {}
+    }
+  }
+}
+
+
+void toggleWA(int input) {
+  // Check and toggle atomizer.
+  int count = input - 1;
+
+  // Press switch once.
+  if (!WA_state[count]) {
+    toggleAtomizer(count);
+    WA_state[count] = true;
+  } else {
+
+    // Press switch thrice.
+    for (int i = 0; i < 3; i++) {
+      toggleAtomizer(count);
+      unsigned long startMillis = millis();
+      while (millis() - startMillis < 50) {}
+    }
+    WA_state[count] = false;
+  }
+}
+
+
+void toggleAtomizer(int index) {
+  digitalWrite(WA[index], HIGH);
+  unsigned long startMillis = millis();
+  while (millis() - startMillis < 100) {}
+  digitalWrite(WA[index], LOW);
 }
 
 
 void storeData(String research_data) {
-  // Open file.
-  File dataFile = SD.open(fileName, FILE_WRITE);
-
   // Check data & write it into the file.
   if (dataFile) {
     dataFile.println(research_data);
@@ -562,27 +628,25 @@ void storeData(String research_data) {
     sdcmError();
   }
 
-  // Close file.
-  dataFile.close();
+  // Flush data file.
+  dataFile.flush();
 }
 
 
 void printLog(String text_input) {
   // Insert calculated time elapsed.
   String te = "[" + String(millis()/1000) + "] -> ";
-  String text = te+text_input;
-
-  // Open log file.
-  File logFile = SD.open(logFileName, FILE_WRITE);
 
   // Check data & write it into the file.
   if (logFile) {
-    Serial.println(text);
-    logFile.println(text);
+    Serial.print(te);
+    Serial.println(text_input);
+    logFile.print(te);
+    logFile.println(text_input);
   } else {
     sdcmError();
   }
 
-  // Close file.
-  logFile.close();
+  // Flush data.
+  logFile.flush();
 }
