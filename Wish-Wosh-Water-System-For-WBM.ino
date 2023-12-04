@@ -67,7 +67,7 @@ const int WET_VAL4 = 869;   // Callibrate Value
 
 // Water Atomizer setup.
 // Digital pins & their state.
-const int WA[4] = {1, 2, 3, 4};
+const int WA[4] = {2, 3, 4, 5};
 bool WA_state[4] = {false, false, false, false};
 
 
@@ -76,6 +76,7 @@ const int mult = 1000;
 const int cps = base * mult;
 unsigned long previousMillis = 0;
 
+// Variables for file management.
 String dataFileName;        // Data File Name
 File dataFile;              // Data File
 String logFileName;         // Log File Name
@@ -143,6 +144,7 @@ void cycle() {
 
   // Calculate time elapsed.
   String te = String(millis()/1000)+",";
+  // String te = String((unsigned long)millis()/1000)+",";
 
   // Pull research data.
   String th = pullTHData();    // Temperature & Humidity
@@ -150,12 +152,9 @@ void cycle() {
   String sc = "None,None,None,None";// Spray Count
 
   // Concatinate & store data.
-  String final = dt+te+th+sm+sc;
   if (saveData) {
-  storeData(final);
+  storeData(dt, te, th, sm, sc);
   }
-
-  Serial.println(final);
 }
 
 
@@ -214,21 +213,21 @@ void createCSVfile() {
 
   if (dataFile) {
     // Write csv headers into the file.
-    String headers = "";
-    headers += "Date,";
-    headers += "Time,";
-    headers += "TimeElapsed,";
-    headers += "Temperature,";
-    headers += "Humidity,";
-    headers += "SoilMoisture_1,";
-    headers += "SoilMoisture_2,";
-    headers += "SoilMoisture_3,";
-    headers += "SoilMoisture_4,";
-    headers += "SprayCounter_1,";
-    headers += "SprayCounter_2,";
-    headers += "SprayCounter_3,";
-    headers += "SprayCounter_4";
-    dataFile.println(headers);
+    dataFile.println(
+    "Date,"
+    "Time,"
+    "TimeElapsed,"
+    "Temperature,"
+    "Humidity,"
+    "SoilMoisture_1,"
+    "SoilMoisture_2,"
+    "SoilMoisture_3,"
+    "SoilMoisture_4,"
+    "SprayCounter_1,"
+    "SprayCounter_2,"
+    "SprayCounter_3,"
+    "SprayCounter_4"
+    );
 
     Serial.println("File Created: `" + dataFileName + "`.");
   } else {
@@ -306,27 +305,27 @@ void setClockModuleTime() {
   printLog("Received time: "+receivedTime);
 
   // Parse received time and set the clock module's time.
-  Ds1302::DateTime dt;
+  Ds1302::DateTime dnt;
   sscanf(
     receivedTime.c_str(),
       "%hhu/%hhu/%hu %hhu:%hhu:%hhu",
-      &dt.month,
-      &dt.day,
-      &dt.year,
-      &dt.hour,
-      &dt.minute,
-      &dt.second
+      &dnt.month,
+      &dnt.day,
+      &dnt.year,
+      &dnt.hour,
+      &dnt.minute,
+      &dnt.second
     );
 
   if (debugMode) {
     printLog("Clock Module Debugging..");
-    printLog("Parsed DT Values: ");
-    printLog("Month: "+String(dt.month));
-    printLog("Day: "+String(dt.day));
-    printLog("Year: "+String(dt.year));
-    printLog("Hour: "+String(dt.hour));
-    printLog("Minute: "+String(dt.minute));
-    printLog("Second: "+String(dt.second));
+    printLog("Parsed DnT Values: ");
+    printLog("Month: "+String(dnt.month));
+    printLog("Day: "+String(dnt.day));
+    printLog("Year: "+String(dnt.year));
+    printLog("Hour: "+String(dnt.hour));
+    printLog("Minute: "+String(dnt.minute));
+    printLog("Second: "+String(dnt.second));
 
     uint8_t month, day, year, hour, minute, second;
 
@@ -351,7 +350,7 @@ void setClockModuleTime() {
     printLog("Second: "+String(second));
   }
 
-  rtc.setDateTime(&dt);
+  rtc.setDateTime(&dnt);
 
   // Indicate successful request & process.
   clockModuleSet();
@@ -400,34 +399,34 @@ String getCurrentDT() {
   // Return the current date and time string.
   Ds1302::DateTime now;
   rtc.getDateTime(&now);
-  String dt = "";
+  String dnt = "";
 
   static uint8_t last_second = 0;
   if (last_second != now.second) {
     last_second = now.second;
 
     // Date & Time Format -> MM/DD/YYYY HH/MM/SS
-    if (now.month < 10) dt += "0";
-    dt += now.month;                // 01-12
-    dt += "/";
-    if (now.day < 10) dt += "0";
-    dt += now.day;                  // 01-31
-    dt += "/";
-    dt += "20";
-    dt += now.year;                 // 00-99
+    if (now.month < 10) dnt += "0";
+    dnt += now.month;                // 01-12
+    dnt += "/";
+    if (now.day < 10) dnt += "0";
+    dnt += now.day;                  // 01-31
+    dnt += "/";
+    dnt += "20";
+    dnt += now.year;                 // 00-99
 
-    dt += ",";
-    if (now.hour < 10) dt += "0";
-    dt += now.hour;                 // 00-23
-    dt += ":";
-    if (now.minute < 10) dt += "0";
-    dt += now.minute;               // 00-59
-    dt += ":";
-    if (now.second < 10) dt += "0";
-    dt += now.second;               // 00-59
-    dt += ",";
+    dnt += ",";
+    if (now.hour < 10) dnt += "0";
+    dnt += now.hour;                 // 00-23
+    dnt += ":";
+    if (now.minute < 10) dnt += "0";
+    dnt += now.minute;               // 00-59
+    dnt += ":";
+    if (now.second < 10) dnt += "0";
+    dnt += now.second;               // 00-59
+    dnt += ",";
 
-    return dt;
+    return dnt;
   } else {
     return "01/01/2000,00:00:00,";
   }
@@ -487,17 +486,17 @@ String pullTHData() {
   }
 
   // Convert data to strings with 2 decimal places.
-  String th = "";
-  th += String(temperature, 2) + ",";
-  th += String(humidity, 2) + ",";
+  String thd = "";
+  thd += String(temperature, 2) + ",";
+  thd += String(humidity, 2) + ",";
 
-  return th;
+  return thd;
 }
 
 
 void invalidTHData() {
   // Indicates temperature & humidity sensor or data error.
-  printLog("TH Sensor||Data Error");
+  printLog("TH Sensor Error | Data invalid.");
   digitalWrite(A_LED_IP, HIGH);
   delay(200);
   digitalWrite(A_LED_IP, LOW);
@@ -523,7 +522,7 @@ String pullCSMData() {
     csm2_value,
     csm3_value,
     csm4_value
-    };
+  };
 
   String data = "";
   bool invalid = false;
@@ -547,7 +546,7 @@ String pullCSMData() {
     invalidCSMData(err_msg);
   }
 
-  // Callibrate CSM sensor.
+  // Calibrate CSM sensor.
   if (callibrateCSMS) {
     String raw_data = "";
     raw_data += String(csm1_raw) + ",";
@@ -620,10 +619,26 @@ void toggleAtomizer(int index) {
 }
 
 
-void storeData(String research_data) {
+void storeData(
+  String dt,
+  String te,
+  String th,
+  String sm,
+  String sc
+  ) {
   // Check data & write it into the file.
   if (dataFile) {
-    dataFile.println(research_data);
+    Serial.print(dt);
+    Serial.print(te);
+    Serial.print(th);
+    Serial.print(sm);
+    Serial.println(sc);
+
+    dataFile.print(dt);
+    dataFile.print(te);
+    dataFile.print(th);
+    dataFile.print(sm);
+    dataFile.println(sc);
   } else {
     sdcmError();
   }
@@ -635,13 +650,13 @@ void storeData(String research_data) {
 
 void printLog(String text_input) {
   // Insert calculated time elapsed.
-  String te = "[" + String(millis()/1000) + "] -> ";
+  String prefix = "[" + String(millis()/1000) + "] -> ";
 
   // Check data & write it into the file.
   if (logFile) {
-    Serial.print(te);
+    Serial.print(prefix);
     Serial.println(text_input);
-    logFile.print(te);
+    logFile.print(prefix);
     logFile.println(text_input);
   } else {
     sdcmError();

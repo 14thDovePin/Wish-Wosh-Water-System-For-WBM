@@ -1,5 +1,7 @@
 TODO List
 - Remove most string concatination.
+- Implement warning for no clock module.
+- Implement memory saving tips.
 - Fix data saving of sensor output.
   + SprayCounter_1
   + SprayCounter_2
@@ -15,6 +17,13 @@ TODO List
 - ?Add a file backup system for power outage.
 - ?Fix cycles, don't use delay, use millis instead.
 - ?Break out into multiple files.
+
+
+Cleaned & manage String concatination.
+
+Changes
+- Modified how strings are managed and parsed.
+- Refactored code.
 
 
 Implemented automated atomizer switching & testing.
