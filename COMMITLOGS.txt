@@ -1,4 +1,6 @@
 TODO List
+- Update to not use `delay` function.
+
 - Remove most string concatination.
 - Implement warning for no clock module.
 - Implement memory saving tips.
@@ -17,6 +19,16 @@ TODO List
 - ?Add a file backup system for power outage.
 - ?Fix cycles, don't use delay, use millis instead.
 - ?Break out into multiple files.
+
+
+
+Changes
+- Roughly copied the spine of `Wish-Wosh-Water-System-For-WBM.ino`
+ to `main.ino` in its own directory.
+`testSDModule.ino`
+- Added ability to save both the data and log files.
+- Refactored code.
+
 
 
 Added test for the micro sd card module.

@@ -36,6 +36,9 @@ void setup() {
   // Initialize modules.
   sdcmInitialize();  // SD Card Module
 
+  // Save files.
+  dataFile.flush();
+  logFile.flush();
   Serial.println("Test Finished!");
 }
 
