@@ -19,11 +19,24 @@ TODO List
 - ?Break out into multiple files.
 
 
+Added test for the micro sd card module.
+
+Changes
+- Copied and refactored code regarding sd card module from
+  `Wish-Wosh-Water-System-For-WBM.ino` to `testSDModule.ino`.
+- Moved test `.ino` files into their own directories for
+  isolated testing and execution.
+- Changed function name `createCSVfile` -> `createFiles`.
+- Refactored code in both afforementioned files.
+
+
+
 Cleaned & manage String concatination.
 
 Changes
 - Modified how strings are managed and parsed.
 - Refactored code.
+
 
 
 Implemented automated atomizer switching & testing.

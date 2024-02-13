@@ -9,28 +9,28 @@
 #include <DHT.h>
 
 
-// Program attributes & flags.
-const int   base            = 2;      // Cycles per Second
-const bool  saveData        = true;
-bool        skipAtmozerTest = false;
-const bool  callibrateCSMS  = false;
-const bool  debugMode       = false;
-const bool  setClock        = false;
+// Switches.
+const int   cycleBase         = 2;      // Cycles per Second
+const bool  saveData          = true;
+bool        skipAtmozerTest   = true;
+const bool  CSMScallibration  = false;
+const bool  setClock          = false;
+const bool  debugMode         = false;
 
 
 // Pinouts.
-const int CPS_LED_IP = A3;  // CPS Indicator
-const int A_LED_IP = A4;    // Red Indicator A
-const int B_LED_IP = A5;    // Red Indicator B
-const int P_OFF = A2;       // Power Off Button
+const int CPS_LED_IP  = A3;  // CPS Indicator
+const int A_LED_IP    = A4;  // Red Indicator A
+const int B_LED_IP    = A5;  // Red Indicator B
+const int P_OFF       = A2;  // Power Off Button
 
 // SD Card Module setup.
-const int chipSelect = 10;  // Digital Pin
+const int chipSelect  = 10;  // Digital Pin
 
 // Clock Codule setup.
-const int CLK_PIN = 6;      // CLK  ->  Digital Pin
-const int DATA_PIN = 7;     // DATA ->  Digital Pin
-const int RST_PIN = 8;      // RST  ->  Digital Pin
+const int CLK_PIN     = 6;   // Digital Pin
+const int DATA_PIN    = 7;   // Digital Pin
+const int RST_PIN     = 8;   // Digital Pin
 Ds1302 rtc(RST_PIN, CLK_PIN, DATA_PIN);
 
 const static char* WeekDays[] = {
@@ -44,7 +44,7 @@ const static char* WeekDays[] = {
 };
 
 // Temperature & Humidity Sensor setup.
-#define DHTPIN 9            // Digital Pin
+#define DHTPIN          9   // Digital Pin
 #define DHTTYPE DHT11       // DHT Sensor Type
 DHT dht(DHTPIN, DHTTYPE);   // Initialize class.
 
@@ -73,14 +73,14 @@ bool WA_state[4] = {false, false, false, false};
 
 // Variables for CPS calculation.
 const int mult = 1000;
-const int cps = base * mult;
+const int cps = cycleBase * mult;
 unsigned long previousMillis = 0;
 
 // Variables for file management.
-String dataFileName;        // Data File Name
-File dataFile;              // Data File
-String logFileName;         // Log File Name
-File logFile;               // Log File
+String dataFileName;  // Data File Name
+File dataFile;        // Data File
+String logFileName;   // Log File Name
+File logFile;         // Log File
 
 
 void setup() {
@@ -147,11 +147,11 @@ void cycle() {
   // String te = String((unsigned long)millis()/1000)+",";
 
   // Pull research data.
-  String th = pullTHData();    // Temperature & Humidity
-  String sm = pullCSMData();   // Soil Moisture
-  String sc = "None,None,None,None";// Spray Count
+  String th = pullTHData();           // Temperature & Humidity
+  String sm = pullCSMData();          // Soil Moisture
+  String sc = "None,None,None,None";  // Spray Count
 
-  // Concatinate & store data.
+  // Store data.
   if (saveData) {
   storeData(dt, te, th, sm, sc);
   }
@@ -176,6 +176,7 @@ void sdcmInitialize() {
 
 void sdcmError() {
   // SD card module fail indicator.
+  return;  // TODO: Remove after testing.
   if (!saveData) return;
   Serial.println("SDCMError | File or disk failure.");
 
@@ -249,6 +250,7 @@ void createCSVfile() {
 
 
 void createFileError() {
+  return;  // TODO: Remove after testing.
   // File creation fail indicator.
 
   // Close files.
@@ -547,7 +549,7 @@ String pullCSMData() {
   }
 
   // Calibrate CSM sensor.
-  if (callibrateCSMS) {
+  if (CSMScallibration) {
     String raw_data = "";
     raw_data += String(csm1_raw) + ",";
     raw_data += String(csm2_raw) + ",";
@@ -627,13 +629,13 @@ void storeData(
   String sc
   ) {
   // Check data & write it into the file.
-  if (dataFile) {
-    Serial.print(dt);
-    Serial.print(te);
-    Serial.print(th);
-    Serial.print(sm);
-    Serial.println(sc);
+  Serial.print(dt);
+  Serial.print(te);
+  Serial.print(th);
+  Serial.print(sm);
+  Serial.println(sc);
 
+  if (dataFile) {
     dataFile.print(dt);
     dataFile.print(te);
     dataFile.print(th);
