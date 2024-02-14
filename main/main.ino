@@ -1,8 +1,8 @@
 // Module Libraries & Dependencies
-#include <SPI.h>
+
 
 // Switches
-const int cycleBase = 2;      // Cycles per Second
+const int cycleBase = 2;  // Cycles per Second
 
 // Pinouts.
 const int CPS_LED_IP  = A3;  // CPS Indicator

@@ -21,6 +21,20 @@ TODO List
 - ?Break out into multiple files.
 
 
+Added test and setting software for the clock module.
+
+Changes
+- Refactored `testSDModule.ino` to integrate `main.ino`.
+- Updated `testDSMoule.ino` to include missing parts.
+- Added new file `testClockModule.ino` in its own directory
+  and is based from `main.ino`.
+- Updated csv headers in `testSDModule.ino`.
+- Updated `set_time.py`.
+- Added new file `setClock.ino` in its own directory. This
+  is a stand alone program that should only be used for
+  recallibrating the Clock Module.
+
+
 
 Changes
 - Roughly copied the spine of `Wish-Wosh-Water-System-For-WBM.ino`
