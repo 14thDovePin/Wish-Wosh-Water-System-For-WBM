@@ -1,11 +1,12 @@
 TODO List
 - Splice code for the following:
   + Main Program
-   = Cycle
+    = Cycle
   + ~SD Card Module~
   + ~Clock Module~
-  + Temperature & Humidity Sensor
+  + ~Temperature & Humidity Sensor~
   + Capacitive Soil Moisture Sensor
+    = Create csms callibration sketch.
   + Water Atomizers
 - Update to not use `delay` function.
 - Extend cycles to 5s in the final output.
@@ -23,6 +24,18 @@ Unsure
 - Add a file backup system for power outage.
 - Fix cycles, don't use delay, use millis instead.
 - Break out into multiple files.
+
+
+Added a test for the csm sensor.
+
+Changes
+- Added a new sketch `testCSMSensor.ino` which also
+  can be used to callibrate the CSM Sensors.
+- Added a new file `callibrate_csms.py` for monitoring
+  the output of the arduino when the serial output is
+  needed to be copied.
+- Refactored code.
+
 
 
 Added a test for the th sensor.
