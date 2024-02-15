@@ -1,24 +1,37 @@
 TODO List
+- Splice code for the following:
+  + Main Program
+   = Cycle
+  + ~SD Card Module~
+  + ~Clock Module~
+  + Temperature & Humidity Sensor
+  + Capacitive Soil Moisture Sensor
+  + Water Atomizers
 - Update to not use `delay` function.
-
-- Remove most string concatination.
-- Implement warning for no clock module.
-- Implement memory saving tips.
-- Fix data saving of sensor output.
-  + SprayCounter_1
-  + SprayCounter_2
-  + SprayCounter_3
-  + SprayCounter_4
 - Extend cycles to 5s in the final output.
 
-- ?Implement setClock flag.
+Optional
+- Update to use
+- Implement warning for no clock module.
+
+Unsure
+- Implement setClock flag.
     This feature should only run once by creating a file when
     it has never ran. Then the consecutive runs will check for
     said file if the clock has been set or not. And to reset the
     system, just delete the file itself.
-- ?Add a file backup system for power outage.
-- ?Fix cycles, don't use delay, use millis instead.
-- ?Break out into multiple files.
+- Add a file backup system for power outage.
+- Fix cycles, don't use delay, use millis instead.
+- Break out into multiple files.
+
+
+Added a test for the th sensor.
+
+Changes
+- Updated todo list.
+- Added `testTHSensor` with its own directory.
+- Refactored code.
+
 
 
 Added test and setting software for the clock module.
