@@ -5,8 +5,7 @@ TODO List
   + ~SD Card Module~
   + ~Clock Module~
   + ~Temperature & Humidity Sensor~
-  + Capacitive Soil Moisture Sensor
-    = Create csms callibration sketch.
+  + ~Capacitive Soil Moisture Sensor~
   + Water Atomizers
 - Update to not use `delay` function.
 - Extend cycles to 5s in the final output.
@@ -24,6 +23,16 @@ Unsure
 - Add a file backup system for power outage.
 - Fix cycles, don't use delay, use millis instead.
 - Break out into multiple files.
+
+
+Added a test for the water atmoizers.
+
+Changes
+- Added a new sketch `testWaterAtomizers.ino`
+  in its own directory.
+- Fixed bugs of `testWaterAtomizers.ino`.
+- Refactored code.
+
 
 
 Added a test for the csm sensor.
