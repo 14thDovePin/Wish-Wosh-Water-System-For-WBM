@@ -25,6 +25,20 @@ Unsure
 - Break out into multiple files.
 
 
+Gathered and grouped spliced code.
+
+Changes
+- Added a new and hopefully final sketch `final.ino`.
+- Included the following files into `final.ino`.
+  + testClockModule.ino
+  + testSDModule.ino
+  + testTHSensor.ino
+  + testCSMSensor.ino
+  + testWaterAtomizers.ino
+- Refactored code.
+
+
+
 Added a test for the water atmoizers.
 
 Changes
