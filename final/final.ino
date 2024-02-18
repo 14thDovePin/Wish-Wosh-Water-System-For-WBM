@@ -12,10 +12,10 @@
 // Switches
 const int cycleBase = 2;      // Cycles per Second
 const bool setClock   = false;
-const bool debugMode  = true;
+const bool debugMode  = false;
 const bool saveData = true;
 const bool  callibrateCSMS  = false;
-bool skipAtmozerTest = false;
+bool skipAtmozerTest = true;
 
 // Pinouts
 const int CPS_LED_IP  = A3;  // CPS Indicator
@@ -57,26 +57,22 @@ const int WET_VAL4  = 266;  // CSMS 4 Wet Value
 bool WA_state[4] = {false, false, false, false};
 
 // Cycles per Second Variables
-const int ms = 1000;
-const int cps = cycleBase * ms;
+const int cps = cycleBase * 1000;
 unsigned long previousTime = millis();
-
-// Clock Variables
-const static char* WeekDays[] = {
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday"
-};
 
 // File Management Variables
 String dataFileName;  // Data File Name
 File dataFile;        // Data File
 String logFileName;   // Log File Name
 File logFile;         // Log File
+
+// Data Management Variabls
+String dt;
+String te;
+String th;
+String sm;
+String final;
+String logPrefix;
 
 
 
@@ -104,6 +100,7 @@ void setup() {
   // Test water atomizers.
   if (!skipAtmozerTest) {
     testWA();
+  }
 }
 
 
@@ -150,15 +147,21 @@ void cycle() {
     sdcmError();
   }
 
-  // Print date and time.
-  Serial.println(String(getCurrentDT()));
+  // Pring, store, & log data.
+  dt = getCurrentDT();
+  te = String(millis()/1000);
+  te.concat(",");
+  th = pullTHData();
+  sm = pullCSMData();
+  final = "";
+  final.concat(dt);
+  final.concat(te);
+  final.concat(th);
+  final.concat(sm);
 
-  // Print time elapsed.
-  Serial.println(String(millis()/1000));
-
-  // Pull Data
-  Serial.println(pullTHData());  // Temperature & Humidity
-  Serial.println(pullCSMData());  // Soil Moisture
+  dataFile.println(final);
+  dataFile.flush();
+  Serial.println(final);
 }
 
 
@@ -181,7 +184,8 @@ void clockModuleInitialize() {
 
   // Check clock module power loss.
   if (rtc.isHalted() || setClock) {
-    setClockModuleTime();
+    // NOTE: Undo comment.
+    // setClockModuleTime();
   }
 }
 
@@ -203,7 +207,10 @@ void setClockModuleTime() {
 
   // Read time from serial.
   String receivedTime = Serial.readString();
-  Serial.println("Received time: "+receivedTime);
+  String msg;
+  msg = "Received time: ";
+  msg.concat(receivedTime);
+  Serial.println(msg);
 
   // Parse time and set the clock module's time.
   Ds1302::DateTime dnt;
@@ -219,14 +226,33 @@ void setClockModuleTime() {
     );
 
   if (debugMode) {
+    String msg;
     Serial.println("Clock Module Debugging..");
     Serial.println("Parsed DnT Values: ");
-    Serial.println("Month: "+String(dnt.month));
-    Serial.println("Day: "+String(dnt.day));
-    Serial.println("Year: "+String(dnt.year));
-    Serial.println("Hour: "+String(dnt.hour));
-    Serial.println("Minute: "+String(dnt.minute));
-    Serial.println("Second: "+String(dnt.second));
+    msg = "";
+    msg.concat("Month: ");
+    msg.concat(String(dnt.month));
+    Serial.println(msg);
+    msg = "";
+    msg.concat("Day: ");
+    msg.concat(String(dnt.day));
+    Serial.println(msg);
+    msg = "";
+    msg.concat("Year: ");
+    msg.concat(String(dnt.year));
+    Serial.println(msg);
+    msg = "";
+    msg.concat("Hour: ");
+    msg.concat(String(dnt.hour));
+    Serial.println(msg);
+    msg = "";
+    msg.concat("Minute: ");
+    msg.concat(String(dnt.minute));
+    Serial.println(msg);
+    msg = "";
+    msg.concat("Second: ");
+    msg.concat(String(dnt.second));
+    Serial.println(msg);
 
     uint8_t month, day, year, hour, minute, second;
 
@@ -242,12 +268,30 @@ void setClockModuleTime() {
     );
 
     Serial.println("Parsed Raw Values: ");
-    Serial.println("Month: "+String(month));
-    Serial.println("Day: "+String(day));
-    Serial.println("Year: "+String(year));
-    Serial.println("Hour: "+String(hour));
-    Serial.println("Minute: "+String(minute));
-    Serial.println("Second: "+String(second));
+    msg = "";
+    msg.concat("Month: ");
+    msg.concat(String(month));
+    Serial.println(msg);
+    msg = "";
+    msg.concat("Day: ");
+    msg.concat(String(day));
+    Serial.println(msg);
+    msg = "";
+    msg.concat("Year: ");
+    msg.concat(String(year));
+    Serial.println(msg);
+    msg = "";
+    msg.concat("Hour: ");
+    msg.concat(String(hour));
+    Serial.println(msg);
+    msg = "";
+    msg.concat("Minute: ");
+    msg.concat(String(minute));
+    Serial.println(msg);
+    msg = "";
+    msg.concat("Second: ");
+    msg.concat(String(second));
+    Serial.println(msg);
   }
 
   rtc.setDateTime(&dnt);
@@ -306,25 +350,24 @@ String getCurrentDT() {
     last_second = now.second;
 
     // Date & Time Format -> MM/DD/YYYY HH/MM/SS
-    if (now.month < 9) dnt += "0";
-    dnt += now.month;                // 01-12
-    dnt += "/";
-    if (now.day < 9) dnt += "0";
-    dnt += now.day;                  // 01-31
-    dnt += "/";
-    dnt += "20";
-    dnt += now.year;                 // 00-99
-
-    dnt += ",";
-    if (now.hour < 9) dnt += "0";
-    dnt += now.hour;                 // 00-23
-    dnt += ":";
-    if (now.minute < 9) dnt += "0";
-    dnt += now.minute;               // 00-59
-    dnt += ":";
-    if (now.second < 9) dnt += "0";
-    dnt += now.second;               // 00-59
-    dnt += ",";
+    if (now.month < 10) dnt.concat("0");
+    dnt.concat(String(now.month));                // 01-12
+    dnt.concat("/");
+    if (now.day < 10) dnt.concat("0");
+    dnt.concat(String(now.day));                  // 01-31
+    dnt.concat("/");
+    dnt.concat("20");
+    dnt.concat(String(now.year));                 // 00-99
+    dnt.concat(",");
+    if (now.hour < 10) dnt.concat("0");
+    dnt.concat(String(now.hour));                 // 00-23
+    dnt.concat(":");
+    if (now.minute < 10) dnt.concat("0");
+    dnt.concat(String(now.minute));               // 00-59
+    dnt.concat(":");
+    if (now.second < 10) dnt.concat("0");
+    dnt.concat(String(now.second));               // 00-59
+    dnt.concat(",");
 
     return dnt;
   } else {
@@ -381,7 +424,7 @@ void createCSVfile() {
   "SoilMoisture1,"
   "SoilMoisture2,"
   "SoilMoisture3,"
-  "SoilMoisture4"
+  "SoilMoisture4,"
   );
 
   // Create and open the log file.
@@ -465,8 +508,10 @@ String pullTHData() {
 
   // Convert data to strings with 2 decimal places.
   String thd = "";
-  thd += String(temperature, 2) + ",";
-  thd += String(humidity, 2) + ",";
+  thd.concat(String(temperature, 2));
+  thd.concat(",");
+  thd.concat(String(humidity, 2));
+  thd.concat(",");
 
   return thd;
 }
@@ -474,7 +519,7 @@ String pullTHData() {
 
 void invalidTHData() {
   // Indicates temperature & humidity sensor or data error.
-  Serial.println("TH Sensor Error | Data invalid.");
+  printLog("TH Sensor Error!");
   digitalWrite(A_LED_IP, HIGH);
   delay(200);
   digitalWrite(A_LED_IP, LOW);
@@ -511,12 +556,13 @@ String pullCSMData() {
     int mapped_data = values[i];
     if (mapped_data < -5 || mapped_data > 105) {  // 5% Tolerance
       // Renew string data & indicate error.
-      data += "None,";
+      data.concat("None,");
       invalid = true;
-      err_msg += String(i+1);
+      err_msg.concat(String(i+1));
     } else {
       // Concatinate data.
-      data += String(mapped_data)+",";
+      data.concat(String(mapped_data));
+      data.concat(",");
     }
   }
 
@@ -530,10 +576,14 @@ String pullCSMData() {
   // to evaluate average value.
   if (callibrateCSMS) {
     String raw_data = "";
-    raw_data += "S1 ->\t" + String(csm1_raw);
-    raw_data += "\tS2 ->\t" + String(csm2_raw);
-    raw_data += "\tS3 ->\t" + String(csm3_raw);
-    raw_data += "\tS4 ->\t" + String(csm4_raw);
+    raw_data.concat("S1 ->\t");
+    raw_data.concat(String(csm1_raw));
+    raw_data.concat("\tS2 ->\t");
+    raw_data.concat(String(csm2_raw));
+    raw_data.concat("\tS3 ->\t");
+    raw_data.concat(String(csm3_raw));
+    raw_data.concat("\tS4 ->\t");
+    raw_data.concat(String(csm4_raw));
     return raw_data;
   }
 
@@ -543,8 +593,12 @@ String pullCSMData() {
 
 void invalidCSMData(String n) {
   // Indicator light for invalid CSMS data.
-  if (callibrateCSMS) return
-  Serial.println("CSMS["+n+"] Error | Value unexpected!");
+  if (callibrateCSMS) return;
+  String txt = "";
+  txt.concat("CSMS[");
+  txt.concat(n);
+  txt.concat("] Error | Value unexpected!");
+  printLog(txt);
   digitalWrite(B_LED_IP, HIGH);
   delay(150);
   digitalWrite(B_LED_IP, LOW);
@@ -557,10 +611,15 @@ void testWA () {
   Serial.println("Testing Water Atomizers.");
   int pattern[3] = {1000, 2000, 3000};
   delay(1500);
+  String txt;
 
   // Loop through and test each atomizer.
   for (int i = 0; i < 4; i++) {
-    Serial.println("Testing.. Water Atomizer [" + String(i + 1) + "]");
+    txt = "";
+    txt.concat("Testing.. Water Atomizer [");
+    txt.concat(String(i + 1));
+    txt.concat("]");
+    Serial.println(txt);
 
     for (int n = 0; n < 3; n++) {
       toggleWA(WA[i]);
@@ -596,10 +655,26 @@ void toggleWA(int input) {
 
 
 void toggleAtomizer(int pin) {
-  Serial.println("Toggle");
   digitalWrite(pin, HIGH);
   unsigned long startMillis = millis();
   while (millis() - startMillis < 200) {}
   digitalWrite(pin, LOW);
 }
 
+
+
+void printLog(String text_input) {
+  // Insert calculated time elapsed.
+  logPrefix = "[";
+  logPrefix.concat(dt);
+  logPrefix.concat("] -> ");
+
+  // Print data.
+  Serial.print(logPrefix);
+  Serial.println(text_input);
+
+  // Log data.
+  logFile.print(logPrefix);
+  logFile.println(text_input);
+  logFile.flush();
+}

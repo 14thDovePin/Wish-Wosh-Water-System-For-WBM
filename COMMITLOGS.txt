@@ -25,6 +25,18 @@ Unsure
 - Break out into multiple files.
 
 
+Pulled and refactored old code.
+
+Old code belonged to `Wish-Wosh-Water-System-For-WBM.ino`.
+Changes
+- Pulled old code to `final.ino`.
+- Fixed errors in logic of `testWA`.
+- Fixed some memory errors because of over using `String`.
+- Fixed `printLog` not working correctly.
+- Refactored code.
+
+
+
 Gathered and grouped spliced code.
 
 Changes
