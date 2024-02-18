@@ -25,6 +25,11 @@ Unsure
 - Break out into multiple files.
 
 
+Refactored code.
+
+Applied some memory saving techniques.
+
+
 Pulled and refactored old code.
 
 Old code belonged to `Wish-Wosh-Water-System-For-WBM.ino`.

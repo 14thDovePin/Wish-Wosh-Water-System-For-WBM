@@ -10,7 +10,7 @@
 
 
 // Switches
-const int cycleBase = 2;      // Cycles per Second
+const bool cycleBase  = 2;
 const bool setClock   = false;
 const bool debugMode  = false;
 const bool saveData = true;
@@ -39,40 +39,17 @@ Ds1302 rtc(RST_PIN, CLK_PIN, DATA_PIN);
 #define DHTTYPE DHT11 // Sensor Type
 DHT dht(DHTPIN, DHTTYPE); // Initialize Class
 
-// Capacitive Soil Moisture Sensor Callibration
-// Last date callibrated:      02/15/2024
-const int DRY_VAL1  = 619;  // CSMS 1 Dry Value
-const int WET_VAL1  = 270;  // CSMS 1 Wet Value
-
-const int DRY_VAL2  = 612;  // CSMS 2 Dry Value
-const int WET_VAL2  = 268;  // CSMS 2 Wet Value
-
-const int DRY_VAL3  = 614;  // CSMS 3 Dry Value
-const int WET_VAL3  = 267;  // CSMS 3 Wet Value
-
-const int DRY_VAL4  = 617;  // CSMS 4 Dry Value
-const int WET_VAL4  = 266;  // CSMS 4 Wet Value
-
 // Water Atomizers State
 bool WA_state[4] = {false, false, false, false};
 
 // Cycles per Second Variables
-const int cps = cycleBase * 1000;
 unsigned long previousTime = millis();
 
 // File Management Variables
-String dataFileName;  // Data File Name
 File dataFile;        // Data File
-String logFileName;   // Log File Name
 File logFile;         // Log File
 
-// Data Management Variabls
 String dt;
-String te;
-String th;
-String sm;
-String final;
-String logPrefix;
 
 
 
@@ -105,6 +82,9 @@ void setup() {
 
 
 void loop() {
+  // Change left-hand variable to set cycle.
+  const int cps = cycleBase * 1000;
+
   // Calculate and check Cycles per Second.
   unsigned long currentTime = millis();
   if (currentTime - previousTime >= cps) {
@@ -147,13 +127,17 @@ void cycle() {
     sdcmError();
   }
 
+  String te;
+  String th;
+  String sm;
+  String final = "";
+
   // Pring, store, & log data.
   dt = getCurrentDT();
   te = String(millis()/1000);
   te.concat(",");
   th = pullTHData();
   sm = pullCSMData();
-  final = "";
   final.concat(dt);
   final.concat(te);
   final.concat(th);
@@ -394,6 +378,9 @@ void sdcmInitialize() {
 
 
 void createCSVfile() {
+  String dataFileName;  // Data File Name
+  String logFileName;   // Log File Name
+
   // Write the CSV files with its included headers.
   int fileIndex = 0;
   String fileExtension = ".csv";
@@ -528,6 +515,20 @@ void invalidTHData() {
 
 
 String pullCSMData() {
+  // Capacitive Soil Moisture Sensor Callibration
+  // Last date callibrated:      02/15/2024
+  const int DRY_VAL1  = 619;  // CSMS 1 Dry Value
+  const int WET_VAL1  = 270;  // CSMS 1 Wet Value
+
+  const int DRY_VAL2  = 612;  // CSMS 2 Dry Value
+  const int WET_VAL2  = 268;  // CSMS 2 Wet Value
+
+  const int DRY_VAL3  = 614;  // CSMS 3 Dry Value
+  const int WET_VAL3  = 267;  // CSMS 3 Wet Value
+
+  const int DRY_VAL4  = 617;  // CSMS 4 Dry Value
+  const int WET_VAL4  = 266;  // CSMS 4 Wet Value
+
   // Read the analog value from the soil moisture sensor.
   int csm1_raw = analogRead(CSM1);
   int csm2_raw = analogRead(CSM2);
@@ -665,7 +666,8 @@ void toggleAtomizer(int pin) {
 
 void printLog(String text_input) {
   // Insert calculated time elapsed.
-  logPrefix = "[";
+  String logPrefix = "";
+  logPrefix.concat("[");
   logPrefix.concat(dt);
   logPrefix.concat("] -> ");
 
