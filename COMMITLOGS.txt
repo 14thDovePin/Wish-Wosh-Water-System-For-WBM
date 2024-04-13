@@ -25,6 +25,11 @@ Unsure
 - Break out into multiple files.
 
 
+Fixed bug causing the program to cycle every second.
+
+Changed `cycleBase` from bool to int.
+
+
 Refactored code.
 
 Applied some memory saving techniques.

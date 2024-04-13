@@ -10,7 +10,7 @@
 
 
 // Switches
-const bool cycleBase  = 2;
+const int cycleBase  = 2;
 const bool setClock   = false;
 const bool debugMode  = false;
 const bool saveData = true;
